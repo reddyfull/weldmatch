@@ -58,7 +58,7 @@ const employerNavItems: NavItem[] = [
 export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = userType === "welder" ? welderNavItems : employerNavItems;
@@ -67,6 +67,10 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
     await signOut();
     navigate("/login");
   };
+
+  const displayName = user?.displayName || profile?.full_name || user?.email || "User";
+  const avatarUrl = user?.photoURL || profile?.avatar_url;
+  const initials = displayName.charAt(0).toUpperCase();
 
   const NavContent = () => (
     <div className="flex flex-col h-full">
@@ -106,15 +110,13 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3 px-3 py-2">
           <Avatar className="w-10 h-10">
-            <AvatarImage src={user?.user_metadata?.avatar_url} />
+            <AvatarImage src={avatarUrl || undefined} />
             <AvatarFallback className="bg-primary text-primary-foreground">
-              {user?.email?.charAt(0).toUpperCase() || "U"}
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">
-              {user?.user_metadata?.full_name || user?.email}
-            </p>
+            <p className="text-sm font-medium truncate">{displayName}</p>
             <p className="text-xs text-muted-foreground capitalize">{userType}</p>
           </div>
         </div>
@@ -146,9 +148,9 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="w-8 h-8">
-                    <AvatarImage src={user?.user_metadata?.avatar_url} />
+                    <AvatarImage src={avatarUrl || undefined} />
                     <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {user?.email?.charAt(0).toUpperCase() || "U"}
+                      {initials}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -156,7 +158,7 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
-                    <span>{user?.user_metadata?.full_name || "User"}</span>
+                    <span>{displayName}</span>
                     <span className="text-xs text-muted-foreground font-normal">{user?.email}</span>
                   </div>
                 </DropdownMenuLabel>

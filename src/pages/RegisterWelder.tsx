@@ -47,7 +47,7 @@ export default function RegisterWelder() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [user, loading, navigate]);
 
@@ -126,11 +126,7 @@ export default function RegisterWelder() {
     const { error } = await signUpWithEmail(email, password, fullName, 'welder');
     
     if (error) {
-      if (error.message.includes("already registered")) {
-        setError("An account with this email already exists. Please sign in instead.");
-      } else {
-        setError(error.message);
-      }
+      setError(error.message);
       setIsLoading(false);
       return;
     }
@@ -139,6 +135,18 @@ export default function RegisterWelder() {
       title: "Account created!",
       description: "Welcome to WeldMatch. Let's complete your profile.",
     });
+    
+    // Store registration data in sessionStorage to use in profile setup
+    sessionStorage.setItem('welderRegistrationData', JSON.stringify({
+      city,
+      state,
+      zipCode,
+      yearsExperience,
+      selectedProcesses,
+      selectedPositions,
+      phone,
+    }));
+    
     navigate("/welder/profile/setup");
   };
 

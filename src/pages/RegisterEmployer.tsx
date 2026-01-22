@@ -51,7 +51,7 @@ export default function RegisterEmployer() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [user, loading, navigate]);
 
@@ -82,14 +82,23 @@ export default function RegisterEmployer() {
     const { error } = await signUpWithEmail(email, password, companyName, 'employer');
     
     if (error) {
-      if (error.message.includes("already registered")) {
-        setError("An account with this email already exists. Please sign in instead.");
-      } else {
-        setError(error.message);
-      }
+      setError(error.message);
       setIsLoading(false);
       return;
     }
+
+    // Store registration data for profile setup
+    sessionStorage.setItem('employerRegistrationData', JSON.stringify({
+      companyName,
+      phone,
+      addressLine1,
+      city,
+      state,
+      zipCode,
+      industry,
+      companySize,
+      website,
+    }));
 
     toast({
       title: "Account created!",

@@ -61,20 +61,20 @@ export function useUserProfile() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["profile", user?.id],
+    queryKey: ["profile", user?.uid],
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.uid) return null;
 
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user.id)
+        .eq("id", user.uid)
         .single();
 
       if (error) throw error;
       return data as Profile;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.uid,
   });
 }
 
@@ -82,20 +82,20 @@ export function useWelderProfile() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["welder_profile", user?.id],
+    queryKey: ["welder_profile", user?.uid],
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.uid) return null;
 
       const { data, error } = await supabase
         .from("welder_profiles")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", user.uid)
         .maybeSingle();
 
       if (error) throw error;
       return data as WelderProfile | null;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.uid,
   });
 }
 
@@ -103,20 +103,20 @@ export function useEmployerProfile() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["employer_profile", user?.id],
+    queryKey: ["employer_profile", user?.uid],
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.uid) return null;
 
       const { data, error } = await supabase
         .from("employer_profiles")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", user.uid)
         .maybeSingle();
 
       if (error) throw error;
       return data as EmployerProfile | null;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.uid,
   });
 }
 
@@ -126,12 +126,12 @@ export function useCreateWelderProfile() {
 
   return useMutation({
     mutationFn: async (data: Partial<WelderProfile>) => {
-      if (!user?.id) throw new Error("No user");
+      if (!user?.uid) throw new Error("No user");
 
       const { data: profile, error } = await supabase
         .from("welder_profiles")
         .insert({
-          user_id: user.id,
+          user_id: user.uid,
           ...data,
         })
         .select()
@@ -152,12 +152,12 @@ export function useUpdateWelderProfile() {
 
   return useMutation({
     mutationFn: async (data: Partial<WelderProfile>) => {
-      if (!user?.id) throw new Error("No user");
+      if (!user?.uid) throw new Error("No user");
 
       const { data: profile, error } = await supabase
         .from("welder_profiles")
         .update(data)
-        .eq("user_id", user.id)
+        .eq("user_id", user.uid)
         .select()
         .single();
 
@@ -176,12 +176,12 @@ export function useCreateEmployerProfile() {
 
   return useMutation({
     mutationFn: async (data: Partial<EmployerProfile>) => {
-      if (!user?.id) throw new Error("No user");
+      if (!user?.uid) throw new Error("No user");
 
       const { data: profile, error } = await supabase
         .from("employer_profiles")
         .insert({
-          user_id: user.id,
+          user_id: user.uid,
           company_name: data.company_name || "My Company",
           ...data,
         })
@@ -203,12 +203,12 @@ export function useUpdateEmployerProfile() {
 
   return useMutation({
     mutationFn: async (data: Partial<EmployerProfile>) => {
-      if (!user?.id) throw new Error("No user");
+      if (!user?.uid) throw new Error("No user");
 
       const { data: profile, error } = await supabase
         .from("employer_profiles")
         .update(data)
-        .eq("user_id", user.id)
+        .eq("user_id", user.uid)
         .select()
         .single();
 
@@ -227,12 +227,12 @@ export function useUpdateProfile() {
 
   return useMutation({
     mutationFn: async (data: Partial<Profile>) => {
-      if (!user?.id) throw new Error("No user");
+      if (!user?.uid) throw new Error("No user");
 
       const { data: profile, error } = await supabase
         .from("profiles")
         .update(data)
-        .eq("id", user.id)
+        .eq("id", user.uid)
         .select()
         .single();
 
