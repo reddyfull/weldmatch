@@ -14,16 +14,515 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      applications: {
+        Row: {
+          cover_message: string | null
+          created_at: string | null
+          employer_notes: string | null
+          id: string
+          job_id: string
+          match_score: number | null
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["application_status"] | null
+          updated_at: string | null
+          welder_id: string
+        }
+        Insert: {
+          cover_message?: string | null
+          created_at?: string | null
+          employer_notes?: string | null
+          id?: string
+          job_id: string
+          match_score?: number | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["application_status"] | null
+          updated_at?: string | null
+          welder_id: string
+        }
+        Update: {
+          cover_message?: string | null
+          created_at?: string | null
+          employer_notes?: string | null
+          id?: string
+          job_id?: string
+          match_score?: number | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["application_status"] | null
+          updated_at?: string | null
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: false
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certifications: {
+        Row: {
+          ai_extracted_data: Json | null
+          cert_name: string | null
+          cert_number: string | null
+          cert_type: string
+          created_at: string | null
+          document_url: string | null
+          expiry_date: string | null
+          id: string
+          issue_date: string | null
+          issuing_body: string | null
+          verification_status:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+          verified_at: string | null
+          verified_by: string | null
+          welder_id: string
+        }
+        Insert: {
+          ai_extracted_data?: Json | null
+          cert_name?: string | null
+          cert_number?: string | null
+          cert_type: string
+          created_at?: string | null
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_body?: string | null
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+          verified_at?: string | null
+          verified_by?: string | null
+          welder_id: string
+        }
+        Update: {
+          ai_extracted_data?: Json | null
+          cert_name?: string | null
+          cert_number?: string | null
+          cert_type?: string
+          created_at?: string | null
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_body?: string | null
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+          verified_at?: string | null
+          verified_by?: string | null
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certifications_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certifications_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: false
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employer_profiles: {
+        Row: {
+          address_line1: string | null
+          city: string | null
+          company_name: string
+          company_size: Database["public"]["Enums"]["company_size"] | null
+          created_at: string | null
+          description: string | null
+          id: string
+          industry: string | null
+          lat: number | null
+          lng: number | null
+          logo_url: string | null
+          phone: string | null
+          state: string | null
+          stripe_customer_id: string | null
+          subscription_plan:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          subscription_status:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
+          trial_ends_at: string | null
+          updated_at: string | null
+          user_id: string
+          website: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          city?: string | null
+          company_name: string
+          company_size?: Database["public"]["Enums"]["company_size"] | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          industry?: string | null
+          lat?: number | null
+          lng?: number | null
+          logo_url?: string | null
+          phone?: string | null
+          state?: string | null
+          stripe_customer_id?: string | null
+          subscription_plan?:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          subscription_status?:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+          user_id: string
+          website?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          city?: string | null
+          company_name?: string
+          company_size?: Database["public"]["Enums"]["company_size"] | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          industry?: string | null
+          lat?: number | null
+          lng?: number | null
+          logo_url?: string | null
+          phone?: string | null
+          state?: string | null
+          stripe_customer_id?: string | null
+          subscription_plan?:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          subscription_status?:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website?: string | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employer_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          applications_count: number | null
+          benefits: string[] | null
+          city: string | null
+          created_at: string | null
+          description: string | null
+          employer_id: string
+          experience_min: number | null
+          expires_at: string | null
+          id: string
+          job_type: Database["public"]["Enums"]["job_type"]
+          lat: number | null
+          lng: number | null
+          pay_max: number | null
+          pay_min: number | null
+          pay_type: Database["public"]["Enums"]["pay_type"] | null
+          required_certs: string[] | null
+          required_positions: string[] | null
+          required_processes: string[] | null
+          start_date: string | null
+          state: string | null
+          status: Database["public"]["Enums"]["job_status"] | null
+          title: string
+          updated_at: string | null
+          views_count: number | null
+          zip_code: string | null
+        }
+        Insert: {
+          applications_count?: number | null
+          benefits?: string[] | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          employer_id: string
+          experience_min?: number | null
+          expires_at?: string | null
+          id?: string
+          job_type?: Database["public"]["Enums"]["job_type"]
+          lat?: number | null
+          lng?: number | null
+          pay_max?: number | null
+          pay_min?: number | null
+          pay_type?: Database["public"]["Enums"]["pay_type"] | null
+          required_certs?: string[] | null
+          required_positions?: string[] | null
+          required_processes?: string[] | null
+          start_date?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["job_status"] | null
+          title: string
+          updated_at?: string | null
+          views_count?: number | null
+          zip_code?: string | null
+        }
+        Update: {
+          applications_count?: number | null
+          benefits?: string[] | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          employer_id?: string
+          experience_min?: number | null
+          expires_at?: string | null
+          id?: string
+          job_type?: Database["public"]["Enums"]["job_type"]
+          lat?: number | null
+          lng?: number | null
+          pay_max?: number | null
+          pay_min?: number | null
+          pay_type?: Database["public"]["Enums"]["pay_type"] | null
+          required_certs?: string[] | null
+          required_positions?: string[] | null
+          required_processes?: string[] | null
+          start_date?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["job_status"] | null
+          title?: string
+          updated_at?: string | null
+          views_count?: number | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string | null
+          user_type: Database["public"]["Enums"]["user_type"]
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"]
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"]
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      welder_profiles: {
+        Row: {
+          bio: string | null
+          city: string | null
+          created_at: string | null
+          desired_salary_max: number | null
+          desired_salary_min: number | null
+          id: string
+          is_available: boolean | null
+          lat: number | null
+          lng: number | null
+          profile_completion: number | null
+          salary_type: Database["public"]["Enums"]["salary_type"] | null
+          state: string | null
+          updated_at: string | null
+          user_id: string
+          weld_positions: string[] | null
+          weld_processes: string[] | null
+          willing_to_travel: boolean | null
+          years_experience: number | null
+          zip_code: string | null
+        }
+        Insert: {
+          bio?: string | null
+          city?: string | null
+          created_at?: string | null
+          desired_salary_max?: number | null
+          desired_salary_min?: number | null
+          id?: string
+          is_available?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          profile_completion?: number | null
+          salary_type?: Database["public"]["Enums"]["salary_type"] | null
+          state?: string | null
+          updated_at?: string | null
+          user_id: string
+          weld_positions?: string[] | null
+          weld_processes?: string[] | null
+          willing_to_travel?: boolean | null
+          years_experience?: number | null
+          zip_code?: string | null
+        }
+        Update: {
+          bio?: string | null
+          city?: string | null
+          created_at?: string | null
+          desired_salary_max?: number | null
+          desired_salary_min?: number | null
+          id?: string
+          is_available?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          profile_completion?: number | null
+          salary_type?: Database["public"]["Enums"]["salary_type"] | null
+          state?: string | null
+          updated_at?: string | null
+          user_id?: string
+          weld_positions?: string[] | null
+          weld_processes?: string[] | null
+          willing_to_travel?: boolean | null
+          years_experience?: number | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "welder_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_samples: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          file_type: string | null
+          file_url: string
+          id: string
+          welder_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          welder_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_samples_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: false
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_profile_completion: {
+        Args: { _welder_id: string }
+        Returns: number
+      }
+      get_user_type: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["user_type"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      application_status:
+        | "new"
+        | "reviewing"
+        | "interview"
+        | "offer"
+        | "hired"
+        | "rejected"
+      company_size: "1-10" | "11-50" | "51-200" | "200+"
+      job_status: "draft" | "active" | "paused" | "filled" | "expired"
+      job_type: "full_time" | "part_time" | "contract" | "per_diem"
+      pay_type: "hourly" | "salary" | "doe"
+      salary_type: "hourly" | "annual"
+      subscription_plan: "free_trial" | "starter" | "pro" | "enterprise"
+      subscription_status: "trial" | "active" | "past_due" | "cancelled"
+      user_type: "welder" | "employer" | "admin"
+      verification_status: "pending" | "verified" | "expired" | "invalid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +649,25 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      application_status: [
+        "new",
+        "reviewing",
+        "interview",
+        "offer",
+        "hired",
+        "rejected",
+      ],
+      company_size: ["1-10", "11-50", "51-200", "200+"],
+      job_status: ["draft", "active", "paused", "filled", "expired"],
+      job_type: ["full_time", "part_time", "contract", "per_diem"],
+      pay_type: ["hourly", "salary", "doe"],
+      salary_type: ["hourly", "annual"],
+      subscription_plan: ["free_trial", "starter", "pro", "enterprise"],
+      subscription_status: ["trial", "active", "past_due", "cancelled"],
+      user_type: ["welder", "employer", "admin"],
+      verification_status: ["pending", "verified", "expired", "invalid"],
+    },
   },
 } as const
