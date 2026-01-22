@@ -68,8 +68,8 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
     navigate("/login");
   };
 
-  const displayName = user?.displayName || profile?.full_name || user?.email || "User";
-  const avatarUrl = user?.photoURL || profile?.avatar_url;
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email || "User";
+  const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
   const initials = displayName.charAt(0).toUpperCase();
 
   const NavContent = () => (
