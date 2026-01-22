@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Flame, Mail, Lock, User, Phone, MapPin, AlertCircle, Loader2, ChevronRight, ChevronLeft, Check } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { Switch } from "@/components/ui/switch";
+import { Flame, MapPin, Wrench, Target, ChevronRight, ChevronLeft, Check, Loader2, AlertCircle } from "lucide-react";
+import { useCreateWelderProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 
 const WELD_PROCESSES = [
@@ -19,62 +21,46 @@ const WELD_PROCESSES = [
 
 const WELD_POSITIONS = ["1G", "2G", "3G", "4G", "5G", "6G"];
 
-export default function RegisterWelder() {
+export default function WelderProfileSetup() {
   const [step, setStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Step 1 fields
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
-  
-  // Step 2 fields
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [yearsExperience, setYearsExperience] = useState("");
   
-  // Step 3 fields
+  // Step 2 fields
   const [selectedProcesses, setSelectedProcesses] = useState<string[]>([]);
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   
-  const { signUpWithEmail, user, loading } = useAuth();
+  // Step 3 fields
+  const [salaryMin, setSalaryMin] = useState("");
+  const [salaryMax, setSalaryMax] = useState("");
+  const [salaryType, setSalaryType] = useState<"hourly" | "annual">("hourly");
+  const [willingToTravel, setWillingToTravel] = useState(false);
+  const [bio, setBio] = useState("");
+  
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/");
-    }
-  }, [user, loading, navigate]);
+  const createProfile = useCreateWelderProfile();
 
   const validateStep1 = () => {
-    if (!email || !password || !confirmPassword || !fullName) {
-      setError("Please fill in all required fields");
-      return false;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return false;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return false;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address");
+    if (!city || !state) {
+      setError("Please enter your city and state");
       return false;
     }
     return true;
   };
 
   const validateStep2 = () => {
-    if (!city || !state || !zipCode) {
-      setError("Please fill in all location fields");
+    if (selectedProcesses.length === 0) {
+      setError("Please select at least one weld process");
+      return false;
+    }
+    if (selectedPositions.length === 0) {
+      setError("Please select at least one weld position");
       return false;
     }
     return true;
@@ -111,47 +97,36 @@ export default function RegisterWelder() {
   };
 
   const handleSubmit = async () => {
-    if (selectedProcesses.length === 0) {
-      setError("Please select at least one weld process");
-      return;
-    }
-    if (selectedPositions.length === 0) {
-      setError("Please select at least one weld position");
-      return;
-    }
-
-    setIsLoading(true);
     setError(null);
-
-    const { error } = await signUpWithEmail(email, password, fullName, 'welder');
     
-    if (error) {
-      if (error.message.includes("already registered")) {
-        setError("An account with this email already exists. Please sign in instead.");
-      } else {
-        setError(error.message);
-      }
-      setIsLoading(false);
-      return;
-    }
+    try {
+      await createProfile.mutateAsync({
+        city,
+        state,
+        zip_code: zipCode,
+        years_experience: yearsExperience ? parseInt(yearsExperience) : 0,
+        weld_processes: selectedProcesses,
+        weld_positions: selectedPositions,
+        desired_salary_min: salaryMin ? parseFloat(salaryMin) : null,
+        desired_salary_max: salaryMax ? parseFloat(salaryMax) : null,
+        salary_type: salaryType,
+        willing_to_travel: willingToTravel,
+        bio: bio || null,
+        is_available: true,
+      });
 
-    toast({
-      title: "Account created!",
-      description: "Welcome to WeldMatch. Let's complete your profile.",
-    });
-    navigate("/welder/profile/setup");
+      toast({
+        title: "Profile Created!",
+        description: "Your welder profile is now live. Start browsing jobs!",
+      });
+      navigate("/welder/dashboard");
+    } catch (err) {
+      setError("Failed to create profile. Please try again.");
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary via-primary/95 to-primary-dark p-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-primary via-primary/95 to-primary-dark flex items-center justify-center p-4 py-12">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -161,18 +136,18 @@ export default function RegisterWelder() {
 
       <Card className="w-full max-w-lg relative z-10 shadow-2xl border-0">
         <CardHeader className="text-center space-y-4">
-          <Link to="/" className="flex items-center justify-center gap-2 group">
-            <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center shadow-lg group-hover:shadow-glow-accent transition-shadow">
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center shadow-lg">
               <Flame className="w-7 h-7 text-white" />
             </div>
             <span className="text-2xl font-bold text-primary">
               Weld<span className="text-accent">Match</span>
             </span>
-          </Link>
+          </div>
           <div>
-            <CardTitle className="text-2xl">Create Welder Account</CardTitle>
+            <CardTitle className="text-2xl">Complete Your Profile</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Join thousands of certified welders finding their next opportunity
+              Help employers find you by adding your skills and preferences
             </CardDescription>
           </div>
           
@@ -195,8 +170,10 @@ export default function RegisterWelder() {
               </div>
             ))}
           </div>
-          <div className="text-sm text-muted-foreground">
-            Step {step} of 3: {step === 1 ? "Account Info" : step === 2 ? "Location" : "Skills"}
+          <div className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+            {step === 1 && <><MapPin className="w-4 h-4" /> Location & Experience</>}
+            {step === 2 && <><Wrench className="w-4 h-4" /> Skills & Certifications</>}
+            {step === 3 && <><Target className="w-4 h-4" /> Preferences</>}
           </div>
         </CardHeader>
 
@@ -208,104 +185,20 @@ export default function RegisterWelder() {
             </div>
           )}
 
-          {/* Step 1: Account Info */}
+          {/* Step 1: Location & Experience */}
           {step === 1 && (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name *</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="fullName"
-                    placeholder="John Smith"
-                    className="pl-10 h-12"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    className="pl-10 h-12"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="(555) 123-4567"
-                    className="pl-10 h-12"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-10 h-12"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Must be at least 6 characters</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-10 h-12"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Location */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="city">City *</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City *</Label>
                   <Input
                     id="city"
                     placeholder="Houston"
-                    className="pl-10 h-12"
+                    className="h-12"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="state">State *</Label>
                   <Input
@@ -316,20 +209,21 @@ export default function RegisterWelder() {
                     onChange={(e) => setState(e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="zipCode">ZIP Code *</Label>
-                  <Input
-                    id="zipCode"
-                    placeholder="77001"
-                    className="h-12"
-                    value={zipCode}
-                    onChange={(e) => setZipCode(e.target.value)}
-                  />
-                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="yearsExperience">Years of Experience</Label>
+                <Label htmlFor="zipCode">ZIP Code</Label>
+                <Input
+                  id="zipCode"
+                  placeholder="77001"
+                  className="h-12"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="yearsExperience">Years of Welding Experience</Label>
                 <Input
                   id="yearsExperience"
                   type="number"
@@ -344,12 +238,12 @@ export default function RegisterWelder() {
             </div>
           )}
 
-          {/* Step 3: Skills */}
-          {step === 3 && (
+          {/* Step 2: Skills */}
+          {step === 2 && (
             <div className="space-y-6">
               <div className="space-y-3">
                 <Label>Weld Processes *</Label>
-                <p className="text-sm text-muted-foreground">Select all processes you're certified in</p>
+                <p className="text-sm text-muted-foreground">Select all processes you're proficient in</p>
                 <div className="space-y-2">
                   {WELD_PROCESSES.map((process) => (
                     <div
@@ -401,6 +295,77 @@ export default function RegisterWelder() {
             </div>
           )}
 
+          {/* Step 3: Preferences */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Desired Pay Range</Label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      placeholder="Min"
+                      className="h-12"
+                      value={salaryMin}
+                      onChange={(e) => setSalaryMin(e.target.value)}
+                    />
+                  </div>
+                  <span className="text-muted-foreground">to</span>
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      placeholder="Max"
+                      className="h-12"
+                      value={salaryMax}
+                      onChange={(e) => setSalaryMax(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    type="button"
+                    variant={salaryType === "hourly" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSalaryType("hourly")}
+                  >
+                    Per Hour
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={salaryType === "annual" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSalaryType("annual")}
+                  >
+                    Per Year
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg border">
+                <div>
+                  <Label htmlFor="travel">Willing to Travel</Label>
+                  <p className="text-sm text-muted-foreground">Open to jobs that require travel</p>
+                </div>
+                <Switch
+                  id="travel"
+                  checked={willingToTravel}
+                  onCheckedChange={setWillingToTravel}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bio">About You</Label>
+                <Textarea
+                  id="bio"
+                  placeholder="Tell employers about your experience, specialties, and what you're looking for..."
+                  className="min-h-[100px]"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Navigation Buttons */}
           <div className="flex gap-3">
             {step > 1 && (
@@ -430,29 +395,20 @@ export default function RegisterWelder() {
                 variant="hero"
                 className="flex-1 h-12"
                 onClick={handleSubmit}
-                disabled={isLoading}
+                disabled={createProfile.isPending}
               >
-                {isLoading ? (
+                {createProfile.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating Account...
+                    Creating Profile...
                   </>
                 ) : (
-                  "Create Account"
+                  "Complete Setup"
                 )}
               </Button>
             )}
           </div>
         </CardContent>
-
-        <CardFooter className="text-center text-sm">
-          <p className="text-muted-foreground w-full">
-            Already have an account?{" "}
-            <Link to="/login" className="text-accent hover:underline font-medium">
-              Sign in
-            </Link>
-          </p>
-        </CardFooter>
       </Card>
     </div>
   );

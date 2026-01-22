@@ -55,7 +55,7 @@ export default function Login() {
       title: "Welcome back!",
       description: "You have successfully signed in.",
     });
-    navigate("/");
+    navigate("/dashboard");
   };
 
   const handleGoogleSignIn = async () => {
@@ -72,7 +72,7 @@ export default function Login() {
           setError(error.message);
         }
       } else {
-        navigate("/");
+        navigate("/dashboard");
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");

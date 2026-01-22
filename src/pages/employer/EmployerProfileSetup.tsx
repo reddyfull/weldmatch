@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Flame, Mail, Lock, Building, Phone, MapPin, AlertCircle, Loader2, Globe } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { Flame, Building, MapPin, Globe, Loader2, AlertCircle } from "lucide-react";
+import { useCreateEmployerProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 
 const INDUSTRIES = [
@@ -18,6 +19,8 @@ const INDUSTRIES = [
   "Aerospace",
   "Automotive",
   "Infrastructure",
+  "Power Generation",
+  "Mining",
   "Other",
 ];
 
@@ -28,14 +31,10 @@ const COMPANY_SIZES = [
   { value: "200+", label: "200+ employees" },
 ];
 
-export default function RegisterEmployer() {
-  const [isLoading, setIsLoading] = useState(false);
+export default function EmployerProfileSetup() {
   const [error, setError] = useState<string | null>(null);
   
   const [companyName, setCompanyName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [city, setCity] = useState("");
@@ -44,70 +43,54 @@ export default function RegisterEmployer() {
   const [industry, setIndustry] = useState("");
   const [companySize, setCompanySize] = useState("");
   const [website, setWebsite] = useState("");
+  const [description, setDescription] = useState("");
   
-  const { signUpWithEmail, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/");
-    }
-  }, [user, loading, navigate]);
+  const createProfile = useCreateEmployerProfile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!companyName || !email || !password || !confirmPassword) {
-      setError("Please fill in all required fields");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address");
+    if (!companyName) {
+      setError("Company name is required");
       return;
     }
 
-    setIsLoading(true);
+    try {
+      // Calculate trial end date (14 days from now)
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
-    const { error } = await signUpWithEmail(email, password, companyName, 'employer');
-    
-    if (error) {
-      if (error.message.includes("already registered")) {
-        setError("An account with this email already exists. Please sign in instead.");
-      } else {
-        setError(error.message);
-      }
-      setIsLoading(false);
-      return;
+      await createProfile.mutateAsync({
+        company_name: companyName,
+        phone: phone || null,
+        address_line1: addressLine1 || null,
+        city: city || null,
+        state: state || null,
+        zip_code: zipCode || null,
+        industry: industry || null,
+        company_size: companySize as "1-10" | "11-50" | "51-200" | "200+" | null,
+        website: website || null,
+        description: description || null,
+        subscription_plan: "free_trial",
+        subscription_status: "trial",
+        trial_ends_at: trialEndsAt.toISOString(),
+      });
+
+      toast({
+        title: "Company Profile Created!",
+        description: "Your 14-day free trial has started. Post your first job now!",
+      });
+      navigate("/employer/dashboard");
+    } catch (err) {
+      setError("Failed to create company profile. Please try again.");
     }
-
-    toast({
-      title: "Account created!",
-      description: "Welcome to WeldMatch. Your 14-day free trial has started.",
-    });
-    navigate("/employer/profile/setup");
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary via-primary/95 to-primary-dark p-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-primary via-primary/95 to-primary-dark flex items-center justify-center p-4 py-12">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -117,18 +100,18 @@ export default function RegisterEmployer() {
 
       <Card className="w-full max-w-lg relative z-10 shadow-2xl border-0">
         <CardHeader className="text-center space-y-4">
-          <Link to="/" className="flex items-center justify-center gap-2 group">
-            <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center shadow-lg group-hover:shadow-glow-accent transition-shadow">
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center shadow-lg">
               <Flame className="w-7 h-7 text-white" />
             </div>
             <span className="text-2xl font-bold text-primary">
               Weld<span className="text-accent">Match</span>
             </span>
-          </Link>
+          </div>
           <div>
-            <CardTitle className="text-2xl">Create Employer Account</CardTitle>
+            <CardTitle className="text-2xl">Set Up Your Company</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Start your 14-day free trial. No credit card required.
+              Tell us about your company to start posting jobs
             </CardDescription>
           </div>
         </CardHeader>
@@ -157,64 +140,15 @@ export default function RegisterEmployer() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Admin Email *</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="hr@company.com"
-                  className="pl-10 h-12"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-10 h-12"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm *</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-10 h-12"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="(555) 123-4567"
-                  className="pl-10 h-12"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="(555) 123-4567"
+                className="h-12"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
@@ -283,8 +217,8 @@ export default function RegisterEmployer() {
               <RadioGroup value={companySize} onValueChange={setCompanySize} className="grid grid-cols-2 gap-2">
                 {COMPANY_SIZES.map((size) => (
                   <div key={size.value} className="flex items-center space-x-2">
-                    <RadioGroupItem value={size.value} id={size.value} />
-                    <Label htmlFor={size.value} className="text-sm cursor-pointer">
+                    <RadioGroupItem value={size.value} id={`size-${size.value}`} />
+                    <Label htmlFor={`size-${size.value}`} className="text-sm cursor-pointer">
                       {size.label}
                     </Label>
                   </div>
@@ -307,32 +241,34 @@ export default function RegisterEmployer() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="description">Company Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Tell welders about your company, culture, and the types of projects you work on..."
+                className="min-h-[100px]"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
             <Button 
               type="submit" 
               variant="hero" 
               className="w-full h-12 text-base mt-6"
-              disabled={isLoading}
+              disabled={createProfile.isPending}
             >
-              {isLoading ? (
+              {createProfile.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating Account...
+                  Creating Profile...
                 </>
               ) : (
-                "Start Free Trial"
+                "Complete Setup & Start Free Trial"
               )}
             </Button>
           </form>
         </CardContent>
-
-        <CardFooter className="text-center text-sm">
-          <p className="text-muted-foreground w-full">
-            Already have an account?{" "}
-            <Link to="/login" className="text-accent hover:underline font-medium">
-              Sign in
-            </Link>
-          </p>
-        </CardFooter>
       </Card>
     </div>
   );
