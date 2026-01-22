@@ -60,10 +60,24 @@ export default function Login() {
 
   const handleGoogleSignIn = async () => {
     setError(null);
-    const { error } = await signInWithGoogle();
+    setIsLoading(true);
     
-    if (error) {
-      setError(error.message);
+    try {
+      const { error } = await signInWithGoogle();
+      
+      if (error) {
+        if (error.message.includes("popup-closed-by-user")) {
+          setError("Sign-in was cancelled. Please try again.");
+        } else {
+          setError(error.message);
+        }
+      } else {
+        navigate("/");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
