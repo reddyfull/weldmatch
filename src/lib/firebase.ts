@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
@@ -9,7 +9,8 @@ import {
   sendPasswordResetEmail,
   updateProfile,
   onAuthStateChanged,
-  User
+  User,
+  Auth
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -22,18 +23,31 @@ const firebaseConfig = {
   measurementId: "G-XE6V6Y2PNJ"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
+// Initialize Firebase only if not already initialized
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Configure Google provider
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
+let auth: Auth;
+let googleProvider: GoogleAuthProvider;
+
+try {
+  auth = getAuth(app);
+  googleProvider = new GoogleAuthProvider();
+  
+  // Configure Google provider
+  googleProvider.setCustomParameters({
+    prompt: 'select_account'
+  });
+} catch (error) {
+  console.error("Firebase initialization error:", error);
+  // Create fallback auth instance
+  auth = getAuth(app);
+  googleProvider = new GoogleAuthProvider();
+}
 
 // Export auth functions
 export {
+  auth,
+  googleProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
