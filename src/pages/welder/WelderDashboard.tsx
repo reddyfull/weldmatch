@@ -185,7 +185,7 @@ export default function WelderDashboard() {
               )}
 
               <Button variant="outline" className="w-full" asChild>
-                <Link to="/welder/profile">
+                <Link to="/welder/profile/setup">
                   Complete Profile
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Link>
