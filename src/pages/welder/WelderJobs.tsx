@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -444,13 +445,15 @@ export default function WelderJobs() {
               const hasApplied = appliedJobIds.has(job.id);
 
               return (
-                <Card key={job.id} className="flex flex-col hover:shadow-md transition-shadow">
+                <Card key={job.id} className="flex flex-col hover:shadow-md transition-shadow group">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg leading-tight line-clamp-2">
-                          {job.title}
-                        </CardTitle>
+                        <Link to={`/welder/jobs/${job.id}`}>
+                          <CardTitle className="text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors cursor-pointer">
+                            {job.title}
+                          </CardTitle>
+                        </Link>
                         <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
                           <Building className="h-3 w-3" />
                           {job.employer_profiles?.company_name || 'Company'}
@@ -514,21 +517,33 @@ export default function WelderJobs() {
                       )}
                     </div>
 
-                    {/* Apply Button */}
-                    <div className="mt-4 pt-4 border-t">
+                    {/* Action Buttons */}
+                    <div className="mt-4 pt-4 border-t flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        asChild
+                      >
+                        <Link to={`/welder/jobs/${job.id}`}>
+                          View Details
+                        </Link>
+                      </Button>
                       {hasApplied ? (
-                        <Button disabled className="w-full" variant="secondary">
+                        <Button disabled variant="secondary" className="flex-1">
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Applied
                         </Button>
                       ) : (
                         <Button
-                          onClick={() => handleOpenApply(job)}
-                          className="w-full"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleOpenApply(job);
+                          }}
+                          className="flex-1"
                           disabled={!welderProfile}
                         >
                           <Send className="h-4 w-4 mr-2" />
-                          Apply Now
+                          Apply
                         </Button>
                       )}
                     </div>
