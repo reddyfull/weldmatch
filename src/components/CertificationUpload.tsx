@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { verifyCertification } from '@/lib/n8n';
+import { verifyCertification, CertVerificationResponse } from '@/lib/n8n';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2, Clock, AlertTriangle, CheckCircle, XCircle, Upload } from 'lucide-react';
 
 interface Props {
   welderId: string;
-  onSuccess?: () => void;
+  onSuccess?: (result: CertVerificationResponse) => void;
 }
 
 interface RateLimitError {
@@ -19,10 +20,22 @@ interface RateLimitError {
   publicUrl?: string;
 }
 
+const CERT_TYPES = [
+  { value: 'AWS', label: 'AWS (American Welding Society)' },
+  { value: 'ASME', label: 'ASME Section IX' },
+  { value: 'API', label: 'API (American Petroleum Institute)' },
+  { value: 'NCCER', label: 'NCCER' },
+  { value: 'CWI', label: 'CWI (Certified Welding Inspector)' },
+  { value: 'OTHER', label: 'Other' },
+] as const;
+
+type CertType = typeof CERT_TYPES[number]['value'];
+
 export function CertificationUpload({ welderId, onSuccess }: Props) {
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [certType, setCertType] = useState<'AWS' | 'ASME' | 'API' | 'NCCER' | 'CWI' | 'OTHER'>('AWS');
+  const [certType, setCertType] = useState<CertType>('AWS');
+  const [result, setResult] = useState<CertVerificationResponse | null>(null);
   const [rateLimitInfo, setRateLimitInfo] = useState<RateLimitError | null>(null);
   const [countdown, setCountdown] = useState(0);
   const { toast } = useToast();
@@ -43,28 +56,31 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
 
   const processVerification = useCallback(async (certId: string, publicUrl: string) => {
     setProcessing(true);
+    setResult(null);
 
     try {
-      const result = await verifyCertification({
+      const aiResult = await verifyCertification({
         certificationId: certId,
         welderId: welderId,
         imageUrl: publicUrl,
         certType: certType,
       });
 
+      setResult(aiResult);
+
       const updateData: Record<string, unknown> = {
-        ai_extracted_data: result.extraction,
+        ai_extracted_data: aiResult.extraction,
       };
 
-      if (result.success && result.status === 'VERIFIED') {
+      if (aiResult.success && aiResult.status === 'VERIFIED') {
         updateData.verification_status = 'verified';
-        updateData.cert_number = result.extraction?.certificationNumber;
-        updateData.cert_name = result.extraction?.holderName;
-        updateData.issuing_body = result.extraction?.issuingOrganization;
-        updateData.issue_date = result.extraction?.issueDate;
-        updateData.expiry_date = result.extraction?.expiryDate;
+        updateData.cert_number = aiResult.extraction?.certificationNumber;
+        updateData.cert_name = aiResult.extraction?.holderName;
+        updateData.issuing_body = aiResult.extraction?.issuingOrganization;
+        updateData.issue_date = aiResult.extraction?.issueDate;
+        updateData.expiry_date = aiResult.extraction?.expiryDate;
         updateData.verified_at = new Date().toISOString();
-      } else if (result.verification?.isExpired) {
+      } else if (aiResult.verification?.isExpired) {
         updateData.verification_status = 'expired';
       } else {
         updateData.verification_status = 'pending';
@@ -81,13 +97,13 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
       setRateLimitInfo(null);
 
       toast({
-        title: result.status === 'VERIFIED' ? 'Certification Verified!' : 'Processing Complete',
-        description: result.status === 'VERIFIED' 
+        title: aiResult.status === 'VERIFIED' ? 'Certification Verified!' : 'Processing Complete',
+        description: aiResult.status === 'VERIFIED' 
           ? 'Your certification has been verified successfully.'
           : 'Your certification needs manual review.',
       });
 
-      onSuccess?.();
+      onSuccess?.(aiResult);
     } catch (error: unknown) {
       setProcessing(false);
 
@@ -127,6 +143,7 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
 
     try {
       setUploading(true);
+      setResult(null);
 
       // 1. Upload to Supabase Storage
       const fileName = `${welderId}/${Date.now()}_${file.name}`;
@@ -193,43 +210,52 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
 
   return (
     <div className="space-y-6">
+      <h3 className="text-lg font-semibold">Upload Certification</h3>
+      
       <div className="space-y-2">
         <Label htmlFor="certType">Certification Type</Label>
         <Select 
           value={certType} 
-          onValueChange={(value) => setCertType(value as typeof certType)}
+          onValueChange={(value) => setCertType(value as CertType)}
           disabled={isDisabled}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select certification type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="AWS">AWS (American Welding Society)</SelectItem>
-            <SelectItem value="ASME">ASME Section IX</SelectItem>
-            <SelectItem value="API">API (American Petroleum Institute)</SelectItem>
-            <SelectItem value="NCCER">NCCER</SelectItem>
-            <SelectItem value="CWI">CWI (Certified Welding Inspector)</SelectItem>
-            <SelectItem value="OTHER">Other</SelectItem>
+            {CERT_TYPES.map(type => (
+              <SelectItem key={type.value} value={type.value}>
+                {type.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="certFile">Upload Certificate</Label>
-        <Input
-          id="certFile"
-          type="file"
-          accept="image/*,.pdf"
-          onChange={handleUpload}
-          disabled={isDisabled}
-          className="cursor-pointer"
-        />
+        <Label htmlFor="certFile">Upload Certificate Image/PDF</Label>
+        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+          <Input
+            id="certFile"
+            type="file"
+            accept="image/*,.pdf"
+            onChange={handleUpload}
+            disabled={isDisabled}
+            className="hidden"
+          />
+          <label htmlFor="certFile" className={`cursor-pointer ${isDisabled ? 'pointer-events-none opacity-50' : ''}`}>
+            <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm font-medium">Click to upload or drag and drop</p>
+            <p className="text-xs text-muted-foreground mt-1">PNG, JPG, PDF up to 10MB</p>
+          </label>
+        </div>
       </div>
 
+      {/* Status Indicators */}
       {uploading && (
         <div className="flex items-center gap-2 text-muted-foreground p-4 bg-muted rounded-lg">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Uploading...</span>
+          <span>Uploading file...</span>
         </div>
       )}
 
@@ -255,11 +281,6 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
               Retry in: {countdown}s
             </span>
           </div>
-          {rateLimitInfo?.certId && countdown === 0 && (
-            <Button onClick={handleRetry} variant="outline" size="sm">
-              Retry Verification
-            </Button>
-          )}
         </div>
       )}
 
@@ -271,6 +292,71 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
           <Button onClick={handleRetry} variant="default" size="sm">
             Continue Verification
           </Button>
+        </div>
+      )}
+
+      {/* Result Display */}
+      {result && (
+        <div className="p-4 border rounded-lg space-y-4">
+          <div className="flex items-center gap-2">
+            {result.status === 'VERIFIED' ? (
+              <CheckCircle className="h-6 w-6 text-green-500" />
+            ) : (
+              <XCircle className="h-6 w-6 text-amber-500" />
+            )}
+            <span className="font-semibold">
+              {result.status === 'VERIFIED' ? 'Verified!' : 'Needs Review'}
+            </span>
+            <Badge variant={result.status === 'VERIFIED' ? 'default' : 'secondary'}>
+              {result.confidence}% confidence
+            </Badge>
+          </div>
+
+          {result.extraction && (
+            <div className="grid gap-2 text-sm">
+              {result.extraction.certificationNumber && (
+                <p><span className="font-medium">Cert #:</span> {result.extraction.certificationNumber}</p>
+              )}
+              {result.extraction.holderName && (
+                <p><span className="font-medium">Name:</span> {result.extraction.holderName}</p>
+              )}
+              {result.extraction.issuingOrganization && (
+                <p><span className="font-medium">Issuer:</span> {result.extraction.issuingOrganization}</p>
+              )}
+              {result.extraction.issueDate && (
+                <p><span className="font-medium">Issue Date:</span> {result.extraction.issueDate}</p>
+              )}
+              {result.extraction.expiryDate && (
+                <p><span className="font-medium">Expires:</span> {result.extraction.expiryDate}</p>
+              )}
+              
+              {result.extraction.weldProcesses?.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="font-medium">Processes:</span>
+                  {result.extraction.weldProcesses.map((p) => (
+                    <Badge key={p} variant="secondary">{p}</Badge>
+                  ))}
+                </div>
+              )}
+              
+              {result.extraction.weldPositions?.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="font-medium">Positions:</span>
+                  {result.extraction.weldPositions.map((p) => (
+                    <Badge key={p} variant="outline">{p}</Badge>
+                  ))}
+                </div>
+              )}
+
+              {result.extraction.warnings?.length > 0 && (
+                <div className="mt-2 p-2 bg-amber-500/10 rounded text-amber-700 text-xs">
+                  {result.extraction.warnings.map((w, i) => (
+                    <p key={i}>⚠️ {w}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
