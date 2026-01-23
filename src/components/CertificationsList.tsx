@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { verifyCertification, CertType } from '@/lib/n8n';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   CheckCircle, 
   Clock, 
@@ -27,7 +34,9 @@ import {
   Award,
   Calendar,
   RefreshCw,
-  Loader2
+  Loader2,
+  ShieldCheck,
+  ChevronDown
 } from 'lucide-react';
 import { format, parseISO, isPast } from 'date-fns';
 
@@ -90,7 +99,9 @@ export function CertificationsList({ welderId, onCertificationsChange }: Props) 
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [verifying, setVerifying] = useState<string | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const { toast } = useToast();
+  const { isAdmin, user } = useAuth();
 
   const fetchCertifications = async () => {
     try {
@@ -223,6 +234,45 @@ export function CertificationsList({ welderId, onCertificationsChange }: Props) 
     }
   };
 
+  // Admin function to manually update verification status
+  const handleAdminStatusChange = async (certId: string, newStatus: 'verified' | 'invalid' | 'pending') => {
+    try {
+      setUpdatingStatus(certId);
+
+      const updateData: Record<string, unknown> = {
+        verification_status: newStatus,
+      };
+
+      if (newStatus === 'verified') {
+        updateData.verified_at = new Date().toISOString();
+        updateData.verified_by = user?.id;
+      }
+
+      const { error } = await supabase
+        .from('certifications')
+        .update(updateData)
+        .eq('id', certId);
+
+      if (error) throw error;
+
+      await fetchCertifications();
+      onCertificationsChange?.();
+
+      toast({
+        title: 'Status Updated',
+        description: `Certification marked as ${newStatus}.`,
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: 'Update Failed',
+        description: error instanceof Error ? error.message : 'Failed to update status',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
   const getStatusConfig = (cert: Certification) => {
     // Check if expired based on expiry_date even if status says verified
     if (cert.expiry_date && isPast(parseISO(cert.expiry_date))) {
@@ -313,10 +363,55 @@ export function CertificationsList({ welderId, onCertificationsChange }: Props) 
                       <h4 className="font-medium">
                         {cert.cert_name || CERT_TYPE_LABELS[cert.cert_type] || cert.cert_type}
                       </h4>
-                      <Badge className={statusConfig.className}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {statusConfig.label}
-                      </Badge>
+                      {/* Admin can change status via dropdown, others just see badge */}
+                      {isAdmin ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`h-auto py-0.5 px-2 ${statusConfig.className}`}
+                              disabled={updatingStatus === cert.id}
+                            >
+                              {updatingStatus === cert.id ? (
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              ) : (
+                                <StatusIcon className="h-3 w-3 mr-1" />
+                              )}
+                              {statusConfig.label}
+                              <ChevronDown className="h-3 w-3 ml-1" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem
+                              onClick={() => handleAdminStatusChange(cert.id, 'verified')}
+                              className="text-green-700"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Mark as Verified
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleAdminStatusChange(cert.id, 'invalid')}
+                              className="text-red-700"
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Mark as Invalid
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleAdminStatusChange(cert.id, 'pending')}
+                              className="text-amber-700"
+                            >
+                              <Clock className="h-4 w-4 mr-2" />
+                              Mark as Pending
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        <Badge className={statusConfig.className}>
+                          <StatusIcon className="h-3 w-3 mr-1" />
+                          {statusConfig.label}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="mt-2 space-y-1 text-sm text-muted-foreground">

@@ -15,6 +15,7 @@ interface AuthContextType {
   session: Session | null;
   profile: UserProfile | null;
   loading: boolean;
+  isAdmin: boolean;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, fullName: string, userType: 'welder' | 'employer') => Promise<{ error: Error | null }>;
@@ -29,6 +30,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user has admin role
+  const checkAdminRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .rpc('has_role', { _user_id: userId, _role: 'admin' });
+      
+      if (error) {
+        console.error('Error checking admin role:', error);
+        setIsAdmin(false);
+        return;
+      }
+      
+      setIsAdmin(data === true);
+    } catch (error) {
+      console.error('Error checking admin role:', error);
+      setIsAdmin(false);
+    }
+  };
 
   // Fetch user profile from Supabase
   const fetchProfile = async (userId: string) => {
@@ -66,9 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           setTimeout(() => {
             fetchProfile(session.user.id);
+            checkAdminRole(session.user.id);
           }, 0);
         } else {
           setProfile(null);
+          setIsAdmin(false);
         }
         
         setLoading(false);
@@ -82,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.user) {
         fetchProfile(session.user.id);
+        checkAdminRole(session.user.id);
       }
       
       setLoading(false);
@@ -199,6 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         loading,
+        isAdmin,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
