@@ -203,9 +203,27 @@ export default function AdminCertifications() {
 
       if (error) throw error;
 
+      // Send email notifications for each updated certification
+      const selectedCerts = certifications.filter(c => selectedIds.has(c.id));
+      for (const cert of selectedCerts) {
+        try {
+          await supabase.functions.invoke('send-cert-notification', {
+            body: {
+              certificationId: cert.id,
+              newStatus,
+              certType: cert.cert_type,
+              certName: cert.cert_name,
+            },
+          });
+        } catch (emailError) {
+          console.error('Error sending notification for cert:', cert.id, emailError);
+          // Continue with other notifications even if one fails
+        }
+      }
+
       toast({
         title: 'Batch Update Complete',
-        description: `${selectedIds.size} certification(s) marked as ${newStatus}.`,
+        description: `${selectedIds.size} certification(s) marked as ${newStatus}. Email notifications sent.`,
       });
 
       setSelectedIds(new Set());
