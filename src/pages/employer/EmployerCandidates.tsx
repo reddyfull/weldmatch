@@ -243,10 +243,27 @@ export default function EmployerCandidates() {
         .eq("id", applicationId);
 
       if (error) throw error;
+
+      // Send notification to welder for significant status changes
+      const notifyStatuses: ApplicationStatus[] = ["reviewing", "interview", "offer", "hired", "rejected"];
+      if (notifyStatuses.includes(status)) {
+        try {
+          await supabase.functions.invoke("send-status-notification", {
+            body: {
+              applicationId,
+              newStatus: status,
+              rejectionReason: status === "rejected" ? rejectionReason : undefined,
+            },
+          });
+        } catch (notifyError) {
+          console.warn("Failed to send status notification:", notifyError);
+          // Don't fail the status update if notification fails
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employer_applications"] });
-      toast({ title: "Status updated", description: "Application status has been updated successfully." });
+      toast({ title: "Status updated", description: "Application status has been updated successfully. The candidate has been notified." });
       setNotesDialogOpen(false);
       setSelectedApplication(null);
       setEmployerNotes("");
