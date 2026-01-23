@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { parseResume, ResumeParseResponse } from '@/lib/n8n';
+import { parseResume, ProfileSuggestions } from '@/lib/n8n';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,15 +8,21 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, CheckCircle } from 'lucide-react';
 
+interface ResumeResult {
+  success: boolean;
+  profileSuggestions?: ProfileSuggestions;
+  certificationSuggestions?: Array<{ name: string; certType: string }>;
+}
+
 interface Props {
   welderId: string;
-  onSuggestionsReady?: (suggestions: ResumeParseResponse['profileSuggestions']) => void;
+  onSuggestionsReady?: (suggestions: ProfileSuggestions) => void;
 }
 
 export function ResumeUpload({ welderId, onSuggestionsReady }: Props) {
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [result, setResult] = useState<ResumeParseResponse | null>(null);
+  const [result, setResult] = useState<ResumeResult | null>(null);
   const { toast } = useToast();
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
