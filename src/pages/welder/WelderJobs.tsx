@@ -331,8 +331,6 @@ export default function WelderJobs() {
           .map(c => c.cert_type),
         location: `${welderProfile.city || ''}, ${welderProfile.state || ''}`.trim(),
       },
-      employerEmail: '', // Will be fetched by n8n
-      employerName: profiles?.full_name || employerProfile?.company_name || 'Employer',
     });
 
     if (result.success) {
