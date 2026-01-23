@@ -30,6 +30,9 @@ import EmployerProfileEdit from "./pages/employer/EmployerProfileEdit";
 import EmployerJobs from "./pages/employer/EmployerJobs";
 import JobPostingForm from "./pages/employer/JobPostingForm";
 
+// Admin Pages
+import AdminCertifications from "./pages/admin/AdminCertifications";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -63,6 +66,10 @@ const App = () => (
             <Route path="/employer/profile/edit" element={<EmployerProfileEdit />} />
             <Route path="/employer/jobs" element={<EmployerJobs />} />
             <Route path="/employer/jobs/new" element={<JobPostingForm />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin/certifications" element={<AdminCertifications />} />
+            <Route path="/admin/dashboard" element={<AdminCertifications />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
