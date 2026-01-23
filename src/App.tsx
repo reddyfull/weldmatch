@@ -25,6 +25,7 @@ import WelderProfileEdit from "./pages/welder/WelderProfileEdit";
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
 import EmployerProfileSetup from "./pages/employer/EmployerProfileSetup";
 import EmployerProfileEdit from "./pages/employer/EmployerProfileEdit";
+import JobPostingForm from "./pages/employer/JobPostingForm";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />
             <Route path="/employer/profile/setup" element={<EmployerProfileSetup />} />
             <Route path="/employer/profile/edit" element={<EmployerProfileEdit />} />
+            <Route path="/employer/jobs/new" element={<JobPostingForm />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
