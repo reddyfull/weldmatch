@@ -4,6 +4,43 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const N8N_URL = Deno.env.get('N8N_WEBHOOK_URL')!
 const N8N_API_KEY = Deno.env.get('N8N_API_KEY')!
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 20 // Max requests per window per user
+
+// In-memory rate limit store (per instance)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
+
+function checkRateLimit(userId: string): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now()
+  const userLimit = rateLimitStore.get(userId)
+
+  if (!userLimit || now > userLimit.resetTime) {
+    // New window
+    rateLimitStore.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS })
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS }
+  }
+
+  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
+    // Rate limited
+    return { allowed: false, remaining: 0, resetIn: userLimit.resetTime - now }
+  }
+
+  // Increment count
+  userLimit.count++
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - userLimit.count, resetIn: userLimit.resetTime - now }
+}
+
+// Cleanup old entries periodically (prevent memory leaks)
+setInterval(() => {
+  const now = Date.now()
+  for (const [userId, data] of rateLimitStore.entries()) {
+    if (now > data.resetTime) {
+      rateLimitStore.delete(userId)
+    }
+  }
+}, RATE_LIMIT_WINDOW_MS)
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -41,7 +78,32 @@ serve(async (req) => {
       })
     }
 
-    const userId = data.claims.sub
+    const userId = data.claims.sub as string
+
+    // Check rate limit
+    const rateLimit = checkRateLimit(userId)
+    
+    const rateLimitHeaders = {
+      'X-RateLimit-Limit': RATE_LIMIT_MAX_REQUESTS.toString(),
+      'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+      'X-RateLimit-Reset': Math.ceil(rateLimit.resetIn / 1000).toString(),
+    }
+
+    if (!rateLimit.allowed) {
+      console.warn(`Rate limit exceeded for user ${userId}`)
+      return new Response(JSON.stringify({ 
+        error: 'Rate limit exceeded', 
+        retryAfter: Math.ceil(rateLimit.resetIn / 1000) 
+      }), {
+        status: 429,
+        headers: { 
+          ...corsHeaders, 
+          ...rateLimitHeaders,
+          'Content-Type': 'application/json',
+          'Retry-After': Math.ceil(rateLimit.resetIn / 1000).toString()
+        }
+      })
+    }
 
     // Get endpoint and payload
     const { endpoint, payload } = await req.json()
@@ -56,7 +118,7 @@ serve(async (req) => {
     if (!allowedEndpoints.includes(endpoint)) {
       return new Response(JSON.stringify({ error: 'Invalid endpoint' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, ...rateLimitHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -78,12 +140,12 @@ serve(async (req) => {
       console.error('n8n error:', result)
       return new Response(JSON.stringify({ error: result.message || 'n8n request failed' }), {
         status: n8nResponse.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, ...rateLimitHeaders, 'Content-Type': 'application/json' }
       })
     }
 
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, ...rateLimitHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error) {
     console.error('Proxy error:', error)
