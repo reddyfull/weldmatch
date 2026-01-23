@@ -397,13 +397,13 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
                 : 'Needs Review'}
             </span>
             <Badge variant={result.status === 'VERIFIED' && (!result.nameMatch || result.nameMatch.matches) ? 'default' : 'secondary'}>
-              {result.confidence}% confidence
+              {result.confidence}% overall
             </Badge>
           </div>
 
-          {/* Name Mismatch Warning */}
+          {/* Name Mismatch Warning with Detailed Confidence Breakdown */}
           {result.nameMatch && !result.nameMatch.matches && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg space-y-3">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div className="space-y-1">
@@ -415,10 +415,29 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
                   <p className="text-xs text-muted-foreground mt-2">
                     {result.nameMatch.explanation}
                   </p>
-                  <Badge variant="destructive" className="mt-2">
-                    {result.nameMatch.confidence}% name match confidence
-                  </Badge>
                 </div>
+              </div>
+              
+              {/* Confidence Breakdown */}
+              <div className="pt-2 border-t border-red-500/20">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Confidence Breakdown:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center justify-between p-2 bg-background/50 rounded">
+                    <span className="text-xs text-muted-foreground">Document Extraction</span>
+                    <Badge variant="outline" className="text-xs">
+                      {result.extractionConfidence ?? result.confidence}%
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-background/50 rounded">
+                    <span className="text-xs text-muted-foreground">Name Match</span>
+                    <Badge variant="destructive" className="text-xs">
+                      {result.nameMatchConfidence ?? result.nameMatch.confidence}%
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  Overall score is capped due to name mismatch
+                </p>
               </div>
             </div>
           )}
