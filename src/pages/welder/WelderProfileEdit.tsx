@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,15 @@ import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
-  Flame, MapPin, Wrench, Target, Save, ArrowLeft, Loader2, AlertCircle, CheckCircle2 
+  Flame, MapPin, Wrench, Target, Save, ArrowLeft, Loader2, AlertCircle, CheckCircle2, Award 
 } from "lucide-react";
 import { useWelderProfile, useUpdateWelderProfile, useUserProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { WELD_PROCESSES, WELD_POSITIONS } from "@/constants/welderOptions";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
+import { CertificationUpload } from "@/components/CertificationUpload";
+import { CertificationsList } from "@/components/CertificationsList";
 
 export default function WelderProfileEdit() {
   const navigate = useNavigate();
@@ -304,7 +306,7 @@ export default function WelderProfileEdit() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Wrench className="w-5 h-5 text-accent" />
-              <CardTitle>Skills & Certifications</CardTitle>
+              <CardTitle>Skills</CardTitle>
             </div>
             <CardDescription>What welding processes and positions can you work?</CardDescription>
           </CardHeader>
@@ -357,6 +359,36 @@ export default function WelderProfileEdit() {
                   </button>
                 ))}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Certifications Section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Award className="w-5 h-5 text-accent" />
+              <CardTitle>Certifications</CardTitle>
+            </div>
+            <CardDescription>Upload and manage your welding certifications</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <CertificationsList 
+              welderId={welderProfile.id} 
+              onCertificationsChange={() => {
+                // Could refresh profile completion here if needed
+              }}
+            />
+            <div className="border-t pt-6">
+              <CertificationUpload 
+                welderId={welderProfile.id}
+                onSuccess={() => {
+                  toast({
+                    title: "Certification Added",
+                    description: "Your certification has been uploaded and is being verified.",
+                  });
+                }}
+              />
             </div>
           </CardContent>
         </Card>
