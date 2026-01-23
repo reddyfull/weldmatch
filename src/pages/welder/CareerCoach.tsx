@@ -499,7 +499,13 @@ export default function CareerCoach() {
           </Card>
         )}
 
-        {isLoading && !result ? (
+        {/* Show loading while fetching stored results */}
+        {isLoadingStored ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Loading your career plan...</p>
+          </div>
+        ) : isLoading && !result ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
