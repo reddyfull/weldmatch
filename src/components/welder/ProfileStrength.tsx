@@ -38,23 +38,56 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
   const { data: welderProfile } = useWelderProfile();
   
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingStored, setIsLoadingStored] = useState(true);
   const [result, setResult] = useState<ProfileOptimizationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [certifications, setCertifications] = useState<any[]>([]);
+  const [hasStoredResult, setHasStoredResult] = useState(false);
 
   // Fetch certifications
   useEffect(() => {
     async function fetchCerts() {
-      if (!user?.id) return;
+      if (!welderProfile?.id) return;
       const { data } = await supabase
         .from('certifications')
         .select('cert_type, cert_number, verification_status, issue_date, expiry_date')
-        .eq('welder_id', user.id);
+        .eq('welder_id', welderProfile.id);
       setCertifications(data || []);
     }
     fetchCerts();
-  }, [user?.id]);
+  }, [welderProfile?.id]);
+
+  // Load stored profile optimization result from career_coach_results
+  useEffect(() => {
+    async function loadStoredResult() {
+      if (!welderProfile?.id) {
+        setIsLoadingStored(false);
+        return;
+      }
+      
+      try {
+        // Using any cast since types haven't been regenerated yet
+        const { data, error } = await (supabase
+          .from('career_coach_results' as any) as any)
+          .select('result_data, updated_at')
+          .eq('welder_id', welderProfile.id)
+          .single();
+
+        if (data && !error && data.result_data) {
+          // We have stored career coach data - extract profile strength info
+          setHasStoredResult(true);
+          // For now, just mark that we have stored data so we don't auto-regenerate
+          // The ProfileStrength uses a different endpoint than CareerCoach
+        }
+      } catch (err) {
+        console.log('No stored results found');
+      } finally {
+        setIsLoadingStored(false);
+      }
+    }
+    loadStoredResult();
+  }, [welderProfile?.id]);
 
   const analyzeProfile = useCallback(async () => {
     if (!user?.id || !profile || !welderProfile) return;
@@ -95,12 +128,8 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
     }
   }, [user, profile, welderProfile, certifications]);
 
-  // Auto-analyze on first load
-  useEffect(() => {
-    if (welderProfile && !result && !isLoading) {
-      analyzeProfile();
-    }
-  }, [welderProfile, result, isLoading, analyzeProfile]);
+  // Don't auto-analyze - only analyze when user clicks the button
+  // This prevents unnecessary API calls on every page load
 
   const getStrengthBadge = (strength: string) => {
     const colors = {
@@ -111,6 +140,21 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
     };
     return colors[strength as keyof typeof colors] || colors.moderate;
   };
+
+  if (isLoadingStored) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-4 w-48" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-24 w-24 rounded-full mx-auto" />
+          <Skeleton className="h-4 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading && !result) {
     return (
