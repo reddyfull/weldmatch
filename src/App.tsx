@@ -20,6 +20,7 @@ import ChooseRole from "./pages/ChooseRole";
 import WelderDashboard from "./pages/welder/WelderDashboard";
 import WelderProfileSetup from "./pages/welder/WelderProfileSetup";
 import WelderProfileEdit from "./pages/welder/WelderProfileEdit";
+import WelderDocuments from "./pages/welder/WelderDocuments";
 
 // Employer Pages
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/welder/dashboard" element={<WelderDashboard />} />
             <Route path="/welder/profile/setup" element={<WelderProfileSetup />} />
             <Route path="/welder/profile/edit" element={<WelderProfileEdit />} />
+            <Route path="/welder/documents" element={<WelderDocuments />} />
             
             {/* Employer Routes */}
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />
