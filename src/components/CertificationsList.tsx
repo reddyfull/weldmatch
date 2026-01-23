@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { verifyCertification, CertType } from '@/lib/n8n';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,7 +25,9 @@ import {
   Trash2, 
   ExternalLink,
   Award,
-  Calendar
+  Calendar,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { format, parseISO, isPast } from 'date-fns';
 
@@ -86,6 +89,7 @@ export function CertificationsList({ welderId, onCertificationsChange }: Props) 
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchCertifications = async () => {
@@ -144,6 +148,73 @@ export function CertificationsList({ welderId, onCertificationsChange }: Props) 
       });
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handleRerunVerification = async (cert: Certification) => {
+    if (!cert.document_url) {
+      toast({
+        title: 'Cannot Verify',
+        description: 'No document URL available for this certification.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setVerifying(cert.id);
+
+      const aiResult = await verifyCertification({
+        certificationId: cert.id,
+        welderId: welderId,
+        imageUrl: cert.document_url,
+        certType: cert.cert_type as CertType,
+      });
+
+      const updateData: Record<string, unknown> = {
+        ai_extracted_data: aiResult.extraction,
+      };
+
+      if (aiResult.success && aiResult.status === 'VERIFIED') {
+        updateData.verification_status = 'verified';
+        updateData.cert_number = aiResult.extraction?.certificationNumber;
+        updateData.cert_name = aiResult.extraction?.holderName;
+        updateData.issuing_body = aiResult.extraction?.issuingOrganization;
+        updateData.issue_date = aiResult.extraction?.issueDate;
+        updateData.expiry_date = aiResult.extraction?.expiryDate;
+        updateData.verified_at = new Date().toISOString();
+      } else if (aiResult.verification?.isExpired) {
+        updateData.verification_status = 'expired';
+      } else {
+        updateData.verification_status = 'pending';
+      }
+
+      const { error: updateError } = await supabase
+        .from('certifications')
+        .update(updateData)
+        .eq('id', cert.id);
+
+      if (updateError) throw updateError;
+
+      // Refresh the list
+      await fetchCertifications();
+      onCertificationsChange?.();
+
+      toast({
+        title: aiResult.status === 'VERIFIED' ? 'Certification Verified!' : 'Processing Complete',
+        description: aiResult.status === 'VERIFIED' 
+          ? 'Your certification has been verified successfully.'
+          : 'Your certification needs manual review.',
+      });
+    } catch (error) {
+      console.error('Error verifying certification:', error);
+      toast({
+        title: 'Verification Failed',
+        description: error instanceof Error ? error.message : 'Failed to verify certification',
+        variant: 'destructive',
+      });
+    } finally {
+      setVerifying(null);
     }
   };
 
@@ -270,6 +341,23 @@ export function CertificationsList({ welderId, onCertificationsChange }: Props) 
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {/* Rerun verification button for pending/invalid certs */}
+                    {(cert.verification_status === 'pending' || cert.verification_status === 'invalid') && cert.document_url && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRerunVerification(cert)}
+                        disabled={verifying === cert.id}
+                        title="Rerun AI verification"
+                      >
+                        {verifying === cert.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
+
                     {cert.document_url && (
                       <Button
                         variant="outline"
