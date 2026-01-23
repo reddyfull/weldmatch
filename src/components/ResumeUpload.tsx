@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { parseResume, ProfileSuggestions } from '@/lib/n8n';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ export function ResumeUpload({ welderId, onSuggestionsReady }: Props) {
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<ResumeResult | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -33,8 +35,11 @@ export function ResumeUpload({ welderId, onSuggestionsReady }: Props) {
       setUploading(true);
       setResult(null);
 
-      // 1. Upload to Supabase Storage
-      const fileName = `${welderId}/resume_${Date.now()}_${file.name}`;
+      // 1. Upload to Supabase Storage - use user.id for folder to match RLS policy
+      const userId = user?.id;
+      if (!userId) throw new Error('User not authenticated');
+      
+      const fileName = `${userId}/resume_${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from('resumes')
         .upload(fileName, file);

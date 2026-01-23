@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { verifyCertification, CertVerificationResponse, CertType } from '@/lib/n8n';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
   const [rateLimitInfo, setRateLimitInfo] = useState<RateLimitError | null>(null);
   const [countdown, setCountdown] = useState(0);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Countdown timer for rate limit
   useEffect(() => {
@@ -143,8 +145,11 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
       setUploading(true);
       setResult(null);
 
-      // 1. Upload to Supabase Storage
-      const fileName = `${welderId}/${Date.now()}_${file.name}`;
+      // 1. Upload to Supabase Storage - use user.id for folder to match RLS policy
+      const userId = user?.id;
+      if (!userId) throw new Error('User not authenticated');
+      
+      const fileName = `${userId}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from('certifications')
         .upload(fileName, file);
