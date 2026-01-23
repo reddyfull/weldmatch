@@ -15,6 +15,7 @@ export interface CertVerificationRequest {
   welderId: string;
   imageUrl: string;
   certType: CertType;
+  profileName?: string; // For name matching fraud detection
 }
 
 export interface CertExtractionData {
@@ -40,6 +41,14 @@ export interface CertVerificationData {
   verificationScore: number;
 }
 
+export interface NameMatchResult {
+  matches: boolean;
+  confidence: number;
+  certificateName: string;
+  profileName: string;
+  explanation: string;
+}
+
 export interface CertVerificationResponse {
   success: boolean;
   certificationId: string;
@@ -50,6 +59,7 @@ export interface CertVerificationResponse {
   confidence: number;
   needsHumanReview: boolean;
   processedAt: string;
+  nameMatch?: NameMatchResult; // Name matching fraud detection result
   error?: string;
 }
 
