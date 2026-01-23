@@ -37,8 +37,31 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
   const [result, setResult] = useState<CertVerificationResponse | null>(null);
   const [rateLimitInfo, setRateLimitInfo] = useState<RateLimitError | null>(null);
   const [countdown, setCountdown] = useState(0);
+  const [profileName, setProfileName] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Fetch profile name on mount
+  useEffect(() => {
+    const fetchProfileName = async () => {
+      if (!user?.id) {
+        setProfileLoading(false);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      setProfileName(profile?.full_name || null);
+      setProfileLoading(false);
+    };
+
+    fetchProfileName();
+  }, [user?.id]);
 
   // Countdown timer for rate limit
   useEffect(() => {
@@ -59,17 +82,7 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
     setResult(null);
 
     try {
-      // Get the user's profile name for fraud detection
-      // First try the profiles table, then fall back to welder_profiles if needed
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user?.id)
-        .maybeSingle();
-
-      let profileName = profile?.full_name;
-
-      // If no name in profiles, check if we can get it from welder_profiles bio or other source
+      // Use the cached profile name for fraud detection
       if (!profileName) {
         console.warn('No full_name found in profiles table for fraud detection');
       } else {
@@ -249,7 +262,8 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
     }
   };
 
-  const isDisabled = uploading || processing || countdown > 0;
+  const isDisabled = uploading || processing || countdown > 0 || profileLoading;
+  const missingProfileName = !profileLoading && !profileName;
 
   return (
     <div className="space-y-6">
@@ -275,20 +289,46 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
         </Select>
       </div>
 
+      {/* Profile Name Missing Warning */}
+      {missingProfileName && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-3">
+          <div className="flex items-center gap-2 text-amber-600">
+            <AlertTriangle className="h-5 w-5" />
+            <span className="font-medium">Profile Incomplete</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Please add your full name to your profile before uploading certifications. This is required for verification and fraud detection.
+          </p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.href = '/welder/profile/edit'}
+          >
+            Complete Profile
+          </Button>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="certFile">Upload Certificate Image/PDF</Label>
-        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+        <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+          missingProfileName 
+            ? 'border-muted bg-muted/30 cursor-not-allowed' 
+            : 'border-border hover:border-primary/50'
+        }`}>
           <Input
             id="certFile"
             type="file"
             accept="image/*,.pdf"
             onChange={handleUpload}
-            disabled={isDisabled}
+            disabled={isDisabled || missingProfileName}
             className="hidden"
           />
-          <label htmlFor="certFile" className={`cursor-pointer ${isDisabled ? 'pointer-events-none opacity-50' : ''}`}>
+          <label htmlFor="certFile" className={`cursor-pointer ${(isDisabled || missingProfileName) ? 'pointer-events-none opacity-50' : ''}`}>
             <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm font-medium">Click to upload or drag and drop</p>
+            <p className="text-sm font-medium">
+              {missingProfileName ? 'Complete your profile to upload' : 'Click to upload or drag and drop'}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">PNG, JPG, PDF up to 10MB</p>
           </label>
         </div>
