@@ -68,6 +68,47 @@ export type Database = {
           },
         ]
       }
+      career_coach_results: {
+        Row: {
+          certifications_snapshot: string[] | null
+          checked_actions: string[] | null
+          created_at: string
+          id: string
+          profile_snapshot: Json | null
+          result_data: Json
+          updated_at: string
+          welder_id: string
+        }
+        Insert: {
+          certifications_snapshot?: string[] | null
+          checked_actions?: string[] | null
+          created_at?: string
+          id?: string
+          profile_snapshot?: Json | null
+          result_data: Json
+          updated_at?: string
+          welder_id: string
+        }
+        Update: {
+          certifications_snapshot?: string[] | null
+          checked_actions?: string[] | null
+          created_at?: string
+          id?: string
+          profile_snapshot?: Json | null
+          result_data?: Json
+          updated_at?: string
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "career_coach_results_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: true
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certifications: {
         Row: {
           ai_extracted_data: Json | null

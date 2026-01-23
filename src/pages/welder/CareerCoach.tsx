@@ -5,10 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { toast } from 'sonner';
 import {
   Target,
   TrendingUp,
@@ -17,7 +16,6 @@ import {
   MapPin,
   Briefcase,
   Clock,
-  ChevronRight,
   Sparkles,
   RefreshCw,
   Loader2,
@@ -29,17 +27,19 @@ import {
   CheckCircle,
   Star,
   AlertCircle,
-  Building2,
   Globe,
   Lightbulb,
   Heart,
   Trophy,
-  Rocket
+  Rocket,
+  AlertTriangle,
+  History
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile, useWelderProfile } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { getCareerAdvice } from '@/lib/weldmatch-ai';
+import { formatDistanceToNow } from 'date-fns';
 
 // Actual API response type based on the n8n workflow
 interface CareerCoachResult {
@@ -104,6 +104,21 @@ interface CareerCoachResult {
   generatedAt: string;
 }
 
+interface StoredResult {
+  id: string;
+  result_data: CareerCoachResult;
+  checked_actions: string[];
+  profile_snapshot: {
+    years_experience: number;
+    weld_processes: string[];
+    weld_positions: string[];
+    city: string;
+    state: string;
+  };
+  certifications_snapshot: string[];
+  updated_at: string;
+}
+
 export default function CareerCoach() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -111,10 +126,14 @@ export default function CareerCoach() {
   const { data: welderProfile, isLoading: welderLoading } = useWelderProfile();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingStored, setIsLoadingStored] = useState(true);
   const [result, setResult] = useState<CareerCoachResult | null>(null);
+  const [storedResult, setStoredResult] = useState<StoredResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [certifications, setCertifications] = useState<string[]>([]);
   const [checkedActions, setCheckedActions] = useState<Set<string>>(new Set());
+  const [hasProfileChanges, setHasProfileChanges] = useState(false);
+  const [changedFields, setChangedFields] = useState<string[]>([]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -136,6 +155,80 @@ export default function CareerCoach() {
     }
     fetchCerts();
   }, [welderProfile?.id]);
+
+  // Load stored results
+  useEffect(() => {
+    async function loadStoredResult() {
+      if (!welderProfile?.id) return;
+      
+      setIsLoadingStored(true);
+      try {
+        // Using any cast since types haven't been regenerated yet
+        const { data, error } = await (supabase
+          .from('career_coach_results' as any) as any)
+          .select('*')
+          .eq('welder_id', welderProfile.id)
+          .single();
+
+        if (data && !error) {
+          setStoredResult(data as unknown as StoredResult);
+          setResult(data.result_data as unknown as CareerCoachResult);
+          setCheckedActions(new Set(data.checked_actions || []));
+        }
+      } catch (err) {
+        console.log('No stored results found');
+      } finally {
+        setIsLoadingStored(false);
+      }
+    }
+    loadStoredResult();
+  }, [welderProfile?.id]);
+
+  // Detect profile changes
+  useEffect(() => {
+    if (!welderProfile || !storedResult?.profile_snapshot) return;
+
+    const changes: string[] = [];
+    const snapshot = storedResult.profile_snapshot;
+    
+    if (snapshot.years_experience !== welderProfile.years_experience) {
+      changes.push('Experience level');
+    }
+    if (JSON.stringify(snapshot.weld_processes?.sort()) !== JSON.stringify(welderProfile.weld_processes?.sort())) {
+      changes.push('Welding processes');
+    }
+    if (JSON.stringify(snapshot.weld_positions?.sort()) !== JSON.stringify(welderProfile.weld_positions?.sort())) {
+      changes.push('Welding positions');
+    }
+    if (snapshot.city !== welderProfile.city || snapshot.state !== welderProfile.state) {
+      changes.push('Location');
+    }
+    
+    // Check certifications
+    const storedCerts = storedResult.certifications_snapshot?.sort() || [];
+    const currentCerts = certifications.sort();
+    if (JSON.stringify(storedCerts) !== JSON.stringify(currentCerts)) {
+      changes.push('Certifications');
+    }
+
+    setChangedFields(changes);
+    setHasProfileChanges(changes.length > 0);
+  }, [welderProfile, certifications, storedResult]);
+
+  // Save checked actions to database
+  const saveCheckedActions = useCallback(async (actions: Set<string>) => {
+    if (!welderProfile?.id || !storedResult) return;
+    
+    try {
+      // Using any cast since types haven't been regenerated yet
+      await (supabase
+        .from('career_coach_results' as any) as any)
+        .update({ checked_actions: Array.from(actions) })
+        .eq('welder_id', welderProfile.id);
+    } catch (err) {
+      console.error('Failed to save action progress:', err);
+    }
+  }, [welderProfile?.id, storedResult]);
 
   const getCareerCoaching = useCallback(async () => {
     if (!user?.id || !welderProfile) return;
@@ -209,7 +302,41 @@ export default function CareerCoach() {
 
       // The API returns an array, get the first item
       const data = Array.isArray(response) ? response[0] : response;
-      setResult(data as CareerCoachResult);
+      const resultData = data as CareerCoachResult;
+      setResult(resultData);
+
+      // Create profile snapshot
+      const profileSnapshot = {
+        years_experience: welderProfile.years_experience || 0,
+        weld_processes: welderProfile.weld_processes || [],
+        weld_positions: welderProfile.weld_positions || [],
+        city: welderProfile.city || '',
+        state: welderProfile.state || ''
+      };
+
+      // Save to database (upsert) - using any cast since types haven't been regenerated yet
+      const { error: upsertError } = await (supabase
+        .from('career_coach_results' as any) as any)
+        .upsert(
+          {
+            welder_id: welderProfile.id,
+            result_data: resultData,
+            checked_actions: [],
+            profile_snapshot: profileSnapshot,
+            certifications_snapshot: certifications
+          },
+          { onConflict: 'welder_id' }
+        );
+
+      if (upsertError) {
+        console.error('Failed to save results:', upsertError);
+      } else {
+        // Reset checked actions for new analysis
+        setCheckedActions(new Set());
+        setHasProfileChanges(false);
+        setChangedFields([]);
+        toast.success('Career analysis saved!');
+      }
     } catch (err) {
       console.error('Career advice failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to get career advice');
@@ -217,13 +344,6 @@ export default function CareerCoach() {
       setIsLoading(false);
     }
   }, [user, profile, welderProfile, certifications]);
-
-  // Auto-load on first visit
-  useEffect(() => {
-    if (welderProfile && !result && !isLoading) {
-      getCareerCoaching();
-    }
-  }, [welderProfile, result, isLoading, getCareerCoaching]);
 
   const toggleAction = (action: string) => {
     setCheckedActions(prev => {
@@ -233,8 +353,25 @@ export default function CareerCoach() {
       } else {
         next.add(action);
       }
+      // Auto-save to database
+      saveCheckedActions(next);
       return next;
     });
+  };
+
+  // Calculate action completion stats
+  const getActionStats = () => {
+    if (!result) return { total: 0, completed: 0, percentage: 0 };
+    
+    const allActions = [
+      ...(result.weeklyActionPlan.thisWeek || []).map((_, i) => `week-${i}`),
+      ...(result.weeklyActionPlan.thisMonth || []).map((_, i) => `month-${i}`),
+      ...(result.weeklyActionPlan.next3Months || []).map((_, i) => `quarter-${i}`)
+    ];
+    
+    const total = allActions.length;
+    const completed = allActions.filter(a => checkedActions.has(a)).length;
+    return { total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
   };
 
   const getLevelConfig = (level: string) => {
@@ -261,8 +398,9 @@ export default function CareerCoach() {
   };
 
   const dataLoading = authLoading || profileLoading || welderLoading;
+  const actionStats = getActionStats();
 
-  if (dataLoading) {
+  if (dataLoading || isLoadingStored) {
     return (
       <DashboardLayout userType="welder">
         <div className="p-6 space-y-6">
@@ -288,23 +426,78 @@ export default function CareerCoach() {
               </div>
               AI Career Coach
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Your personalized roadmap to welding success
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-muted-foreground">
+                Your personalized roadmap to welding success
+              </p>
+              {storedResult && (
+                <Badge variant="outline" className="text-xs">
+                  <History className="h-3 w-3 mr-1" />
+                  Updated {formatDistanceToNow(new Date(storedResult.updated_at), { addSuffix: true })}
+                </Badge>
+              )}
+            </div>
           </div>
           <Button
             onClick={getCareerCoaching}
             disabled={isLoading}
             className="shrink-0"
+            variant={hasProfileChanges ? "default" : "outline"}
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <RefreshCw className="h-4 w-4 mr-2" />
             )}
-            Refresh Analysis
+            {hasProfileChanges ? 'Update Analysis' : 'Regenerate'}
           </Button>
         </div>
+
+        {/* Profile Changes Alert */}
+        {hasProfileChanges && result && (
+          <Card className="border-orange-300 bg-gradient-to-r from-orange-50 to-yellow-50">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-orange-900">Your profile has changed!</h4>
+                  <p className="text-sm text-orange-700 mt-1">
+                    Changes detected in: <strong>{changedFields.join(', ')}</strong>
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Click "Update Analysis" to get fresh recommendations based on your current profile.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Action Progress Bar (if has results) */}
+        {result && actionStats.total > 0 && (
+          <Card className="overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Action Plan Progress</span>
+                <span className="text-sm text-muted-foreground">
+                  {actionStats.completed} / {actionStats.total} completed
+                </span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-500"
+                  style={{ width: `${actionStats.percentage}%` }}
+                />
+              </div>
+              {actionStats.percentage >= 100 && (
+                <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                  <CheckCircle className="h-4 w-4" />
+                  Amazing! You've completed all actions. Time for a fresh analysis!
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {isLoading && !result ? (
           <div className="flex flex-col items-center justify-center py-20">
@@ -327,7 +520,23 @@ export default function CareerCoach() {
               <Button onClick={getCareerCoaching}>Try Again</Button>
             </CardContent>
           </Card>
-        ) : result ? (
+        ) : !result ? (
+          <Card className="border-dashed border-2">
+            <CardContent className="py-16 text-center">
+              <div className="p-4 rounded-full bg-primary/10 w-fit mx-auto mb-4">
+                <Sparkles className="h-12 w-12 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Ready to accelerate your career?</h3>
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                Get personalized AI-powered guidance on certifications, skills, salary negotiations, and career paths tailored to your profile.
+              </p>
+              <Button size="lg" onClick={getCareerCoaching}>
+                <Rocket className="h-4 w-4 mr-2" />
+                Generate My Career Plan
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
           <div className="space-y-6">
             {/* Personal Message Banner */}
             <Card className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border-primary/20">
@@ -458,6 +667,11 @@ export default function CareerCoach() {
                   <CheckCircle className="h-4 w-4" />
                   <span className="hidden sm:inline">Action Plan</span>
                   <span className="sm:hidden">Actions</span>
+                  {actionStats.completed > 0 && (
+                    <Badge variant="secondary" className="ml-1 text-xs h-5 px-1.5">
+                      {actionStats.completed}
+                    </Badge>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="paths" className="flex items-center gap-1.5 py-2">
                   <Rocket className="h-4 w-4" />
@@ -867,7 +1081,7 @@ export default function CareerCoach() {
               </TabsContent>
             </Tabs>
           </div>
-        ) : null}
+        )}
       </div>
     </DashboardLayout>
   );
