@@ -171,22 +171,27 @@ export function CertificationsList({ welderId, onCertificationsChange }: Props) 
         certType: cert.cert_type as CertType,
       });
 
+      // Always save extracted data regardless of verification status
       const updateData: Record<string, unknown> = {
         ai_extracted_data: aiResult.extraction,
+        cert_number: aiResult.extraction?.certificationNumber || null,
+        cert_name: aiResult.extraction?.holderName || null,
+        issuing_body: aiResult.extraction?.issuingOrganization || null,
+        issue_date: aiResult.extraction?.issueDate || null,
+        expiry_date: aiResult.extraction?.expiryDate || null,
       };
 
+      // Set verification status based on result
       if (aiResult.success && aiResult.status === 'VERIFIED') {
         updateData.verification_status = 'verified';
-        updateData.cert_number = aiResult.extraction?.certificationNumber;
-        updateData.cert_name = aiResult.extraction?.holderName;
-        updateData.issuing_body = aiResult.extraction?.issuingOrganization;
-        updateData.issue_date = aiResult.extraction?.issueDate;
-        updateData.expiry_date = aiResult.extraction?.expiryDate;
         updateData.verified_at = new Date().toISOString();
       } else if (aiResult.verification?.isExpired) {
         updateData.verification_status = 'expired';
-      } else {
+      } else if (aiResult.status === 'NEEDS_REVIEW') {
+        // Keep as pending but data is saved for manual review
         updateData.verification_status = 'pending';
+      } else {
+        updateData.verification_status = 'invalid';
       }
 
       const { error: updateError } = await supabase
