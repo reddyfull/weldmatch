@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { matchCandidates, notifyNewApplication } from '@/lib/n8n';
+import { matchCandidates } from '@/lib/n8n';
 import { useToast } from '@/hooks/use-toast';
 
 interface ApplyJobData {
@@ -27,8 +27,6 @@ interface ApplyParams {
   coverMessage?: string;
   jobData: ApplyJobData;
   welderData: ApplyWelderData;
-  employerEmail: string;
-  employerName: string;
 }
 
 interface ApplyResult {
@@ -55,8 +53,6 @@ export function useApplyToJob() {
     coverMessage, 
     jobData, 
     welderData,
-    employerEmail,
-    employerName
   }: ApplyParams): Promise<ApplyResult> => {
     try {
       setApplying(true);
@@ -100,18 +96,25 @@ export function useApplyToJob() {
 
       if (insertError) throw insertError;
 
-      // 3. Notify employer via email
+      // 3. Notify employer via edge function
       try {
-        await notifyNewApplication(
-          employerEmail,
-          employerName,
-          jobData.title,
-          welderData.name,
-          matchScore,
-          welderData.yearsExperience || 0,
-          welderData.certifications?.length || 0,
-          application.id
-        );
+        const { error: notifyError } = await supabase.functions.invoke('send-application-notification', {
+          body: {
+            applicationId: application.id,
+            jobId,
+            jobTitle: jobData.title,
+            welderName: welderData.name,
+            matchScore,
+            yearsExperience: welderData.yearsExperience || 0,
+            certCount: welderData.certifications?.length || 0,
+            weldProcesses: welderData.weldProcesses || [],
+            coverMessage,
+          },
+        });
+
+        if (notifyError) {
+          console.warn('Failed to send email notification:', notifyError);
+        }
       } catch (emailError) {
         // Don't fail the application if email fails
         console.warn('Failed to send email notification:', emailError);
