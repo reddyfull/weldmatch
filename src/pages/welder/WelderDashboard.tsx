@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWelderProfile, useUserProfile } from "@/hooks/useUserProfile";
+import { ProfileStrength } from "@/components/welder/ProfileStrength";
 
 export default function WelderDashboard() {
   const navigate = useNavigate();
@@ -150,48 +151,8 @@ export default function WelderDashboard() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Profile Completion */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Profile Completion
-              </CardTitle>
-              <CardDescription>
-                Complete your profile to get more job matches
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Progress</span>
-                  <span className="font-medium">{profileCompletion}%</span>
-                </div>
-                <Progress value={profileCompletion} className="h-2" />
-              </div>
-
-              {incompleteItems.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Still needed:</p>
-                  <ul className="space-y-1">
-                    {incompleteItems.slice(0, 3).map((item, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <AlertCircle className="w-4 h-4 text-warning" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <Button variant="outline" className="w-full" asChild>
-                <Link to="/welder/profile/edit">
-                  Edit Profile
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          {/* AI Profile Strength */}
+          <ProfileStrength />
 
           {/* Recommended Jobs */}
           <Card className="lg:col-span-2">

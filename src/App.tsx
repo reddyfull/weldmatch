@@ -24,6 +24,7 @@ import WelderDocuments from "./pages/welder/WelderDocuments";
 import WelderApplications from "./pages/welder/WelderApplications";
 import WelderJobs from "./pages/welder/WelderJobs";
 import JobDetail from "./pages/welder/JobDetail";
+import CareerCoach from "./pages/welder/CareerCoach";
 
 // Employer Pages
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
@@ -64,6 +65,7 @@ const App = () => (
             <Route path="/welder/applications" element={<WelderApplications />} />
             <Route path="/welder/jobs" element={<WelderJobs />} />
             <Route path="/welder/jobs/:jobId" element={<JobDetail />} />
+            <Route path="/welder/career-coach" element={<CareerCoach />} />
             
             {/* Employer Routes */}
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />
