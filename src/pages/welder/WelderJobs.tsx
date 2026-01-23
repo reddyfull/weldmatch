@@ -39,8 +39,10 @@ import {
   Loader2,
   Send,
   Star,
+  HelpCircle,
 } from 'lucide-react';
 import { WELD_PROCESSES, WELD_POSITIONS } from '@/constants/welderOptions';
+import { SkillsGapModal } from '@/components/welder/SkillsGapModal';
 
 interface Job {
   id: string;
@@ -118,6 +120,9 @@ export default function WelderJobs() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [coverMessage, setCoverMessage] = useState('');
 
+  // Skills Gap Modal
+  const [skillsGapModalOpen, setSkillsGapModalOpen] = useState(false);
+  const [skillsGapJob, setSkillsGapJob] = useState<Job | null>(null);
   useEffect(() => {
     if (user) {
       fetchData();
@@ -301,6 +306,18 @@ export default function WelderJobs() {
     setApplyDialogOpen(true);
   };
 
+  const handleOpenSkillsGap = (job: Job) => {
+    setSkillsGapJob(job);
+    setSkillsGapModalOpen(true);
+  };
+
+  const handleApplyFromModal = () => {
+    if (skillsGapJob) {
+      setSkillsGapModalOpen(false);
+      handleOpenApply(skillsGapJob);
+    }
+  };
+
   const handleApply = async () => {
     if (!selectedJob || !welderProfile) return;
 
@@ -458,9 +475,21 @@ export default function WelderJobs() {
                         </p>
                       </div>
                       {welderProfile && (
-                        <Badge className={`shrink-0 ${getMatchColor(matchScore)}`}>
-                          {matchScore}% Match
-                        </Badge>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge className={`shrink-0 ${getMatchColor(matchScore)}`}>
+                            {matchScore}% Match
+                          </Badge>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleOpenSkillsGap(job);
+                            }}
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            <HelpCircle className="h-3 w-3" />
+                            See Why
+                          </button>
+                        </div>
                       )}
                     </div>
                   </CardHeader>
@@ -608,6 +637,40 @@ export default function WelderJobs() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Skills Gap Modal */}
+        {skillsGapJob && welderProfile && (
+          <SkillsGapModal
+            isOpen={skillsGapModalOpen}
+            onClose={() => setSkillsGapModalOpen(false)}
+            jobId={skillsGapJob.id}
+            jobTitle={skillsGapJob.title}
+            companyName={skillsGapJob.employer_profiles?.company_name || 'Company'}
+            jobData={{
+              processes: skillsGapJob.required_processes || [],
+              positions: skillsGapJob.required_positions || [],
+              certifications: skillsGapJob.required_certs || [],
+              experienceMin: skillsGapJob.experience_min || 0,
+              location: formatLocation(skillsGapJob),
+              salaryMin: skillsGapJob.pay_min,
+              salaryMax: skillsGapJob.pay_max,
+              description: skillsGapJob.description,
+            }}
+            welderData={{
+              id: welderProfile.user_id,
+              name: profile?.full_name || 'Welder',
+              experience: welderProfile.years_experience || 0,
+              processes: welderProfile.weld_processes || [],
+              positions: welderProfile.weld_positions || [],
+              certifications: welderProfile.certifications
+                ?.filter(c => c.verification_status === 'verified')
+                .map(c => c.cert_type) || [],
+              location: `${welderProfile.city || ''}, ${welderProfile.state || ''}`.trim(),
+            }}
+            onApply={handleApplyFromModal}
+            currentMatchScore={calculateMatchScore(skillsGapJob)}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
