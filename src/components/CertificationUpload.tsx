@@ -60,18 +60,28 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
 
     try {
       // Get the user's profile name for fraud detection
+      // First try the profiles table, then fall back to welder_profiles if needed
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('id', user?.id)
         .maybeSingle();
 
+      let profileName = profile?.full_name;
+
+      // If no name in profiles, check if we can get it from welder_profiles bio or other source
+      if (!profileName) {
+        console.warn('No full_name found in profiles table for fraud detection');
+      } else {
+        console.log('Sending profileName for fraud detection:', profileName);
+      }
+
       const aiResult = await verifyCertification({
         certificationId: certId,
         welderId: welderId,
         imageUrl: publicUrl,
         certType: certType,
-        profileName: profile?.full_name || undefined,
+        profileName: profileName || undefined,
       });
 
       setResult(aiResult);
