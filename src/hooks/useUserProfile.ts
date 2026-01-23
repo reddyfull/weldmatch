@@ -128,12 +128,17 @@ export function useCreateWelderProfile() {
     mutationFn: async (data: Partial<WelderProfile>) => {
       if (!user?.id) throw new Error("No user");
 
+      // Use upsert to handle users returning to setup after a profile already exists.
+      // `welder_profiles.user_id` is UNIQUE, so insert would fail with a duplicate key error.
       const { data: profile, error } = await supabase
         .from("welder_profiles")
-        .insert({
-          user_id: user.id,
-          ...data,
-        })
+        .upsert(
+          {
+            ...data,
+            user_id: user.id,
+          },
+          { onConflict: "user_id" }
+        )
         .select()
         .single();
 
@@ -178,13 +183,17 @@ export function useCreateEmployerProfile() {
     mutationFn: async (data: Partial<EmployerProfile>) => {
       if (!user?.id) throw new Error("No user");
 
+      // Use upsert to handle users returning to setup after a profile already exists.
       const { data: profile, error } = await supabase
         .from("employer_profiles")
-        .insert({
-          user_id: user.id,
-          company_name: data.company_name || "My Company",
-          ...data,
-        })
+        .upsert(
+          {
+            ...data,
+            user_id: user.id,
+            company_name: data.company_name ?? "My Company",
+          },
+          { onConflict: "user_id" }
+        )
         .select()
         .single();
 
