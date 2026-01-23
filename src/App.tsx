@@ -21,6 +21,7 @@ import WelderDashboard from "./pages/welder/WelderDashboard";
 import WelderProfileSetup from "./pages/welder/WelderProfileSetup";
 import WelderProfileEdit from "./pages/welder/WelderProfileEdit";
 import WelderDocuments from "./pages/welder/WelderDocuments";
+import WelderApplications from "./pages/welder/WelderApplications";
 
 // Employer Pages
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/welder/profile/setup" element={<WelderProfileSetup />} />
             <Route path="/welder/profile/edit" element={<WelderProfileEdit />} />
             <Route path="/welder/documents" element={<WelderDocuments />} />
+            <Route path="/welder/applications" element={<WelderApplications />} />
             
             {/* Employer Routes */}
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />
