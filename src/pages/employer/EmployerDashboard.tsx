@@ -274,9 +274,9 @@ export default function EmployerDashboard() {
                 </Link>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex-col" asChild>
-                <Link to="/employer/settings">
+                <Link to="/employer/profile/edit">
                   <AlertCircle className="w-6 h-6 mb-2" />
-                  <span>Company Settings</span>
+                  <span>Edit Profile</span>
                 </Link>
               </Button>
             </div>

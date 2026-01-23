@@ -24,6 +24,7 @@ import WelderProfileEdit from "./pages/welder/WelderProfileEdit";
 // Employer Pages
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
 import EmployerProfileSetup from "./pages/employer/EmployerProfileSetup";
+import EmployerProfileEdit from "./pages/employer/EmployerProfileEdit";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
             {/* Employer Routes */}
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />
             <Route path="/employer/profile/setup" element={<EmployerProfileSetup />} />
+            <Route path="/employer/profile/edit" element={<EmployerProfileEdit />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
