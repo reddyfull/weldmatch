@@ -58,7 +58,12 @@ serve(async (req) => {
       '/parse-resume',
       '/match-candidates',
       '/send-email',
-      '/score-candidates'
+      '/score-candidates',
+      // AI Career Agents
+      '/optimize-profile',
+      '/analyze-skills-gap',
+      '/scan-job-matches',
+      '/career-advice'
     ]
     
     if (!allowedEndpoints.includes(endpoint)) {
