@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Flame, MapPin, Wrench, Target, ChevronRight, ChevronLeft, Check, Loader2, AlertCircle } from "lucide-react";
 import { useCreateWelderProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const WELD_PROCESSES = [
   { id: "SMAW", label: "SMAW (Stick)", description: "Shielded Metal Arc Welding" },
@@ -44,6 +46,8 @@ export default function WelderProfileSetup() {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const createProfile = useCreateWelderProfile();
 
   const validateStep1 = () => {
@@ -114,6 +118,9 @@ export default function WelderProfileSetup() {
         bio: bio || null,
         is_available: true,
       });
+
+      // Wait for cache invalidation to complete before navigating
+      await queryClient.invalidateQueries({ queryKey: ["welder_profile", user?.id] });
 
       toast({
         title: "Profile Created!",

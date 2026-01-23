@@ -141,7 +141,7 @@ export function useCreateWelderProfile() {
       return profile;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["welder_profile"] });
+      queryClient.invalidateQueries({ queryKey: ["welder_profile", user?.id] });
     },
   });
 }
@@ -192,7 +192,7 @@ export function useCreateEmployerProfile() {
       return profile;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["employer_profile"] });
+      queryClient.invalidateQueries({ queryKey: ["employer_profile", user?.id] });
     },
   });
 }
