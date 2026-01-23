@@ -59,20 +59,40 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
     setResult(null);
 
     try {
+      // Get the user's profile name for fraud detection
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user?.id)
+        .maybeSingle();
+
       const aiResult = await verifyCertification({
         certificationId: certId,
         welderId: welderId,
         imageUrl: publicUrl,
         certType: certType,
+        profileName: profile?.full_name || undefined,
       });
 
       setResult(aiResult);
+
+      // Check for name mismatch fraud detection
+      if (aiResult.nameMatch && !aiResult.nameMatch.matches) {
+        toast({
+          title: '⚠️ Name Mismatch Detected',
+          description: `Certificate name "${aiResult.nameMatch.certificateName}" doesn't match your profile name "${aiResult.nameMatch.profileName}"`,
+          variant: 'destructive',
+        });
+      }
 
       const updateData: Record<string, unknown> = {
         ai_extracted_data: aiResult.extraction,
       };
 
-      if (aiResult.success && aiResult.status === 'VERIFIED') {
+      // Only auto-verify if names match (or no name check was performed)
+      const nameMatchesOrNoCheck = !aiResult.nameMatch || aiResult.nameMatch.matches;
+
+      if (aiResult.success && aiResult.status === 'VERIFIED' && nameMatchesOrNoCheck) {
         updateData.verification_status = 'verified';
         updateData.cert_number = aiResult.extraction?.certificationNumber;
         updateData.cert_name = aiResult.extraction?.holderName;
@@ -80,6 +100,9 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
         updateData.issue_date = aiResult.extraction?.issueDate;
         updateData.expiry_date = aiResult.extraction?.expiryDate;
         updateData.verified_at = new Date().toISOString();
+      } else if (aiResult.nameMatch && !aiResult.nameMatch.matches) {
+        // Flag as suspicious if names don't match
+        updateData.verification_status = aiResult.status === 'SUSPICIOUS' ? 'invalid' : 'pending';
       } else if (aiResult.verification?.isExpired) {
         updateData.verification_status = 'expired';
       } else {
@@ -96,12 +119,19 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
       setProcessing(false);
       setRateLimitInfo(null);
 
-      toast({
-        title: aiResult.status === 'VERIFIED' ? 'Certification Verified!' : 'Processing Complete',
-        description: aiResult.status === 'VERIFIED' 
-          ? 'Your certification has been verified successfully.'
-          : 'Your certification needs manual review.',
-      });
+      if (aiResult.nameMatch && !aiResult.nameMatch.matches) {
+        toast({
+          title: 'Certification Flagged for Review',
+          description: 'The name on the certificate doesn\'t match your profile. An admin will review this.',
+        });
+      } else {
+        toast({
+          title: aiResult.status === 'VERIFIED' ? 'Certification Verified!' : 'Processing Complete',
+          description: aiResult.status === 'VERIFIED' 
+            ? 'Your certification has been verified successfully.'
+            : 'Your certification needs manual review.',
+        });
+      }
 
       onSuccess?.(aiResult);
     } catch (error: unknown) {
@@ -129,7 +159,7 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
         variant: 'destructive',
       });
     }
-  }, [welderId, certType, toast, onSuccess]);
+  }, [welderId, certType, toast, onSuccess, user?.id]);
 
   const handleRetry = () => {
     if (rateLimitInfo?.certId && rateLimitInfo?.publicUrl) {
@@ -301,19 +331,47 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
       {/* Result Display */}
       {result && (
         <div className="p-4 border rounded-lg space-y-4">
-          <div className="flex items-center gap-2">
-            {result.status === 'VERIFIED' ? (
+          <div className="flex items-center gap-2 flex-wrap">
+            {result.status === 'VERIFIED' && (!result.nameMatch || result.nameMatch.matches) ? (
               <CheckCircle className="h-6 w-6 text-green-500" />
+            ) : result.status === 'SUSPICIOUS' || (result.nameMatch && !result.nameMatch.matches) ? (
+              <AlertTriangle className="h-6 w-6 text-red-500" />
             ) : (
               <XCircle className="h-6 w-6 text-amber-500" />
             )}
             <span className="font-semibold">
-              {result.status === 'VERIFIED' ? 'Verified!' : 'Needs Review'}
+              {result.status === 'VERIFIED' && (!result.nameMatch || result.nameMatch.matches) 
+                ? 'Verified!' 
+                : result.status === 'SUSPICIOUS' || (result.nameMatch && !result.nameMatch.matches)
+                ? 'Suspicious - Review Required'
+                : 'Needs Review'}
             </span>
-            <Badge variant={result.status === 'VERIFIED' ? 'default' : 'secondary'}>
+            <Badge variant={result.status === 'VERIFIED' && (!result.nameMatch || result.nameMatch.matches) ? 'default' : 'secondary'}>
               {result.confidence}% confidence
             </Badge>
           </div>
+
+          {/* Name Mismatch Warning */}
+          {result.nameMatch && !result.nameMatch.matches && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-medium text-red-700">Name Mismatch Detected</p>
+                  <p className="text-sm text-red-600">
+                    Certificate name "<span className="font-medium">{result.nameMatch.certificateName}</span>" 
+                    doesn't match your profile name "<span className="font-medium">{result.nameMatch.profileName}</span>"
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {result.nameMatch.explanation}
+                  </p>
+                  <Badge variant="destructive" className="mt-2">
+                    {result.nameMatch.confidence}% name match confidence
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
 
           {result.extraction && (
             <div className="grid gap-2 text-sm">
