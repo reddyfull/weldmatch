@@ -30,9 +30,9 @@ import {
 import { 
   analyzeSkillsGap, 
   SkillsGapResult,
-  getMatchCategoryColor,
-  getGapSeverityColor
-} from '@/lib/careerAI';
+  getMatchCategoryClasses,
+  getGapSeverityClasses
+} from '@/lib/weldmatch-ai';
 
 interface SkillsGapModalProps {
   isOpen: boolean;
@@ -246,7 +246,7 @@ export function SkillsGapModal({
                               )}
                               <span className="font-medium">{gap.requirement}</span>
                             </div>
-                            <Badge className={getGapSeverityColor(gap.gapSeverity)}>
+                            <Badge className={getGapSeverityClasses(gap.gapSeverity)}>
                               {gap.importance.toUpperCase()}
                             </Badge>
                           </div>
