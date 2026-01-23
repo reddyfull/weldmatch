@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,7 @@ export default function WelderDashboard() {
   const { user, loading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useUserProfile();
   const { data: welderProfile, isLoading: welderLoading } = useWelderProfile();
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -33,12 +34,19 @@ export default function WelderDashboard() {
     }
   }, [user, authLoading, navigate]);
 
+  // Track when initial data load completes
   useEffect(() => {
-    // Redirect to profile setup if welder profile doesn't exist
-    if (!welderLoading && !welderProfile && user) {
+    if (!welderLoading) {
+      setHasInitialLoad(true);
+    }
+  }, [welderLoading]);
+
+  useEffect(() => {
+    // Only redirect after initial load completes AND profile is confirmed null
+    if (hasInitialLoad && !welderProfile && user && !welderLoading) {
       navigate("/welder/profile/setup");
     }
-  }, [welderProfile, welderLoading, user, navigate]);
+  }, [welderProfile, welderLoading, user, navigate, hasInitialLoad]);
 
   const isLoading = authLoading || profileLoading || welderLoading;
 
