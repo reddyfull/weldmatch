@@ -239,6 +239,8 @@ export function CertificationsList({ welderId, onCertificationsChange }: Props) 
     try {
       setUpdatingStatus(certId);
 
+      const cert = certifications.find(c => c.id === certId);
+      
       const updateData: Record<string, unknown> = {
         verification_status: newStatus,
       };
@@ -255,12 +257,29 @@ export function CertificationsList({ welderId, onCertificationsChange }: Props) 
 
       if (error) throw error;
 
+      // Send email notification
+      if (cert) {
+        try {
+          await supabase.functions.invoke('send-cert-notification', {
+            body: {
+              certificationId: certId,
+              newStatus,
+              certType: cert.cert_type,
+              certName: cert.cert_name,
+            },
+          });
+        } catch (emailError) {
+          console.error('Error sending notification:', emailError);
+          // Don't fail the whole operation if email fails
+        }
+      }
+
       await fetchCertifications();
       onCertificationsChange?.();
 
       toast({
         title: 'Status Updated',
-        description: `Certification marked as ${newStatus}.`,
+        description: `Certification marked as ${newStatus}. Notification sent.`,
       });
     } catch (error) {
       console.error('Error updating status:', error);

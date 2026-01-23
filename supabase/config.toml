@@ -2,3 +2,6 @@ project_id = "guichrsakxtfglxnvvrg"
 
 [functions.n8n-proxy]
 verify_jwt = false
+
+[functions.send-cert-notification]
+verify_jwt = false
