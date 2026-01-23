@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { matchCandidates, sendEmail } from '@/lib/n8n';
+import { matchCandidates, notifyNewApplication } from '@/lib/n8n';
 import { useToast } from '@/hooks/use-toast';
 
-interface JobData {
+interface ApplyJobData {
   title: string;
   requiredCerts?: string[];
   requiredProcesses?: string[];
@@ -12,7 +12,7 @@ interface JobData {
   location?: string;
 }
 
-interface WelderData {
+interface ApplyWelderData {
   name: string;
   yearsExperience?: number;
   weldProcesses?: string[];
@@ -25,9 +25,10 @@ interface ApplyParams {
   jobId: string;
   welderId: string;
   coverMessage?: string;
-  jobData: JobData;
-  welderData: WelderData;
+  jobData: ApplyJobData;
+  welderData: ApplyWelderData;
   employerEmail: string;
+  employerName: string;
 }
 
 interface ApplyResult {
@@ -54,7 +55,8 @@ export function useApplyToJob() {
     coverMessage, 
     jobData, 
     welderData,
-    employerEmail 
+    employerEmail,
+    employerName
   }: ApplyParams): Promise<ApplyResult> => {
     try {
       setApplying(true);
@@ -100,18 +102,16 @@ export function useApplyToJob() {
 
       // 3. Notify employer via email
       try {
-        await sendEmail({
-          templateId: 'NEW_APPLICATION',
-          to: employerEmail,
-          data: {
-            jobTitle: jobData.title,
-            welderName: welderData.name,
-            yearsExperience: welderData.yearsExperience || 0,
-            matchScore: matchScore,
-            certCount: welderData.certifications?.length || 0,
-            applicationId: application.id,
-          },
-        });
+        await notifyNewApplication(
+          employerEmail,
+          employerName,
+          jobData.title,
+          welderData.name,
+          matchScore,
+          welderData.yearsExperience || 0,
+          welderData.certifications?.length || 0,
+          application.id
+        );
       } catch (emailError) {
         // Don't fail the application if email fails
         console.warn('Failed to send email notification:', emailError);

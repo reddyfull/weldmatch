@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { verifyCertification, CertVerificationResponse } from '@/lib/n8n';
+import { verifyCertification, CertVerificationResponse, CertType } from '@/lib/n8n';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -20,16 +20,14 @@ interface RateLimitError {
   publicUrl?: string;
 }
 
-const CERT_TYPES = [
+const CERT_TYPES: { value: CertType; label: string }[] = [
   { value: 'AWS', label: 'AWS (American Welding Society)' },
   { value: 'ASME', label: 'ASME Section IX' },
   { value: 'API', label: 'API (American Petroleum Institute)' },
   { value: 'NCCER', label: 'NCCER' },
   { value: 'CWI', label: 'CWI (Certified Welding Inspector)' },
   { value: 'OTHER', label: 'Other' },
-] as const;
-
-type CertType = typeof CERT_TYPES[number]['value'];
+];
 
 export function CertificationUpload({ welderId, onSuccess }: Props) {
   const [uploading, setUploading] = useState(false);
