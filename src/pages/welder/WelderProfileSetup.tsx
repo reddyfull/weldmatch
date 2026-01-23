@@ -12,6 +12,8 @@ import { Flame, MapPin, Wrench, Target, ChevronRight, ChevronLeft, Check, Loader
 import { useCreateWelderProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { ResumeUpload } from "@/components/ResumeUpload";
+import { ProfileSuggestions } from "@/lib/n8n";
 
 const WELD_PROCESSES = [
   { id: "SMAW", label: "SMAW (Stick)", description: "Shielded Metal Arc Welding" },
@@ -44,11 +46,38 @@ export default function WelderProfileSetup() {
   const [willingToTravel, setWillingToTravel] = useState(false);
   const [bio, setBio] = useState("");
   
+  // Temp welder ID for resume upload (will be replaced with real ID after profile creation)
+  const [tempWelderId] = useState(() => crypto.randomUUID());
+  
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const createProfile = useCreateWelderProfile();
+
+  // Handler for when resume suggestions are ready
+  const handleResumeSuggestions = (suggestions: ProfileSuggestions) => {
+    if (suggestions.city) setCity(suggestions.city);
+    if (suggestions.state) setState(suggestions.state);
+    if (suggestions.yearsExperience) setYearsExperience(suggestions.yearsExperience.toString());
+    if (suggestions.weldProcesses?.length) {
+      setSelectedProcesses(prev => {
+        const merged = new Set([...prev, ...suggestions.weldProcesses]);
+        return Array.from(merged);
+      });
+    }
+    if (suggestions.weldPositions?.length) {
+      setSelectedPositions(prev => {
+        const merged = new Set([...prev, ...suggestions.weldPositions]);
+        return Array.from(merged);
+      });
+    }
+    
+    toast({
+      title: "Resume Data Applied",
+      description: "We've pre-filled your profile with information from your resume. Review and adjust as needed.",
+    });
+  };
 
   const validateStep1 = () => {
     if (!city || !state) {
@@ -194,7 +223,24 @@ export default function WelderProfileSetup() {
 
           {/* Step 1: Location & Experience */}
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Resume Upload Section */}
+              <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
+                <ResumeUpload 
+                  welderId={tempWelderId}
+                  onSuggestionsReady={handleResumeSuggestions}
+                />
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or enter manually</span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="city">City *</Label>
