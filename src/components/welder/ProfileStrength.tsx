@@ -25,8 +25,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   optimizeProfile, 
   ProfileOptimizationResult,
-  getProfileStrengthColor 
-} from '@/lib/careerAI';
+  getProfileStrengthBadge 
+} from '@/lib/weldmatch-ai';
 
 interface ProfileStrengthProps {
   compact?: boolean;
@@ -241,7 +241,7 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
                     fill="none"
                     strokeDasharray={150.8}
                     strokeDashoffset={150.8 - (150.8 * analysis.overallScore) / 100}
-                    className={`${getProfileStrengthColor(analysis.profileStrength)} transition-all duration-500`}
+                    className={`${getProfileStrengthBadge(analysis.profileStrength).classes} transition-all duration-500`}
                     strokeLinecap="round"
                   />
                 </svg>
@@ -321,7 +321,7 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
                 fill="none"
                 strokeDasharray={251.2}
                 strokeDashoffset={251.2 - (251.2 * analysis.overallScore) / 100}
-                className={`${getProfileStrengthColor(analysis.profileStrength)} transition-all duration-500`}
+                className={`${getProfileStrengthBadge(analysis.profileStrength).classes} transition-all duration-500`}
                 strokeLinecap="round"
               />
             </svg>

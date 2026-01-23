@@ -32,9 +32,8 @@ import { useUserProfile, useWelderProfile } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   getCareerAdvice, 
-  CareerCoachResult,
-  getProfileStrengthColor 
-} from '@/lib/careerAI';
+  CareerAdviceResult
+} from '@/lib/weldmatch-ai';
 
 export default function CareerCoach() {
   const navigate = useNavigate();
@@ -43,7 +42,7 @@ export default function CareerCoach() {
   const { data: welderProfile, isLoading: welderLoading } = useWelderProfile();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<CareerCoachResult | null>(null);
+  const [result, setResult] = useState<CareerAdviceResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [certifications, setCertifications] = useState<string[]>([]);
   const [checkedActions, setCheckedActions] = useState<Set<string>>(new Set());
