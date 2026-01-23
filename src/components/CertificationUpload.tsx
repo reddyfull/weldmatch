@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Clock, AlertTriangle, CheckCircle, XCircle, Upload } from 'lucide-react';
+import { Loader2, Clock, AlertTriangle, CheckCircle, XCircle, Upload, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Props {
   welderId: string;
@@ -421,20 +422,42 @@ export function CertificationUpload({ welderId, onSuccess }: Props) {
               {/* Confidence Breakdown */}
               <div className="pt-2 border-t border-red-500/20">
                 <p className="text-xs font-medium text-muted-foreground mb-2">Confidence Breakdown:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center justify-between p-2 bg-background/50 rounded">
-                    <span className="text-xs text-muted-foreground">Document Extraction</span>
-                    <Badge variant="outline" className="text-xs">
-                      {result.extractionConfidence ?? result.confidence}%
-                    </Badge>
+                <TooltipProvider>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center justify-between p-2 bg-background/50 rounded">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">Document Extraction</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[200px]">
+                            <p className="text-xs">How accurately the AI could read and extract data from your certificate document (OCR quality).</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {result.extractionConfidence ?? result.confidence}%
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-background/50 rounded">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">Name Match</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[200px]">
+                            <p className="text-xs">How closely the name on the certificate matches your profile name. Low scores indicate a potential mismatch.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Badge variant="destructive" className="text-xs">
+                        {result.nameMatchConfidence ?? result.nameMatch.confidence}%
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between p-2 bg-background/50 rounded">
-                    <span className="text-xs text-muted-foreground">Name Match</span>
-                    <Badge variant="destructive" className="text-xs">
-                      {result.nameMatchConfidence ?? result.nameMatch.confidence}%
-                    </Badge>
-                  </div>
-                </div>
+                </TooltipProvider>
                 <p className="text-xs text-muted-foreground mt-2 italic">
                   Overall score is capped due to name mismatch
                 </p>
