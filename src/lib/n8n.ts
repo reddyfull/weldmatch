@@ -1,24 +1,21 @@
-const N8N_BASE_URL = 'https://reddyfull.app.n8n.cloud/webhook';
+import { supabase } from '@/integrations/supabase/client';
 
-const N8N_API_KEY = import.meta.env.VITE_N8N_API_KEY;
-
-// Helper function with authentication
-async function callN8n(endpoint: string, data: any) {
-  const response = await fetch(`${N8N_BASE_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Api-Key': N8N_API_KEY,
-    },
-    body: JSON.stringify(data),
+// Proxy all n8n calls through Supabase Edge Function for security
+async function callN8n(endpoint: string, payload: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke('n8n-proxy', {
+    body: { endpoint, payload },
   });
 
-  if (!response.ok) {
-    const error = await response.json();
+  if (error) {
+    console.error('n8n proxy error:', error);
     throw new Error(error.message || 'n8n request failed');
   }
 
-  return response.json();
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
 }
 
 // Verify certification with AI
@@ -44,8 +41,8 @@ export async function parseResume(data: {
 export async function calculateMatchScore(data: {
   jobId: string;
   welderId: string;
-  jobData?: any;
-  welderData?: any;
+  jobData?: Record<string, unknown>;
+  welderData?: Record<string, unknown>;
 }) {
   return callN8n('/job-match', data);
 }
@@ -54,7 +51,7 @@ export async function calculateMatchScore(data: {
 export async function sendEmail(data: {
   templateId: string;
   to: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }) {
   return callN8n('/send-email', data);
 }
