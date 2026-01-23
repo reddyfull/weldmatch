@@ -56,7 +56,9 @@ export interface CertVerificationResponse {
   status: 'VERIFIED' | 'NEEDS_REVIEW' | 'SUSPICIOUS' | 'INVALID';
   extraction: CertExtractionData;
   verification: CertVerificationData;
-  confidence: number;
+  confidence: number; // Overall confidence (accounts for name mismatch)
+  extractionConfidence?: number; // How well GPT-4 read the certificate
+  nameMatchConfidence?: number; // How well names match
   needsHumanReview: boolean;
   processedAt: string;
   nameMatch?: NameMatchResult; // Name matching fraud detection result
