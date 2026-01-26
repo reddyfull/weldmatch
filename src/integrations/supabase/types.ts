@@ -365,6 +365,44 @@ export type Database = {
           },
         ]
       }
+      profile_strength_results: {
+        Row: {
+          certifications_snapshot: string[] | null
+          created_at: string
+          id: string
+          profile_snapshot: Json | null
+          result_data: Json
+          updated_at: string
+          welder_id: string
+        }
+        Insert: {
+          certifications_snapshot?: string[] | null
+          created_at?: string
+          id?: string
+          profile_snapshot?: Json | null
+          result_data: Json
+          updated_at?: string
+          welder_id: string
+        }
+        Update: {
+          certifications_snapshot?: string[] | null
+          created_at?: string
+          id?: string
+          profile_snapshot?: Json | null
+          result_data?: Json
+          updated_at?: string
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_strength_results_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: true
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
