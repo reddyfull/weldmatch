@@ -1,0 +1,271 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const N8N_WEBHOOK_URL = Deno.env.get('N8N_WEBHOOK_URL') || 'https://reddyfull.app.n8n.cloud/webhook/aggregate-jobs';
+
+const SEARCH_QUERIES = [
+  { query: 'welder', location: 'United States' },
+  { query: 'pipeline welder', location: 'Texas' },
+  { query: 'structural welder', location: 'United States' },
+  { query: 'tig welder', location: 'California' },
+  { query: 'mig welder', location: 'United States' },
+];
+
+interface ExternalJob {
+  externalId: string;
+  title: string;
+  company: string;
+  companyLogo?: string;
+  location?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  isRemote?: boolean;
+  description?: string;
+  descriptionSnippet?: string;
+  employmentType?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  salaryPeriod?: string;
+  salaryDisplay?: string;
+  applyLink: string;
+  applyIsDirect?: boolean;
+  source?: string;
+  sourceLink?: string;
+  postedAt?: string;
+  expiresAt?: string;
+  requiresExperience?: number;
+  requiredSkills?: string[];
+  requiredEducation?: string;
+  searchQuery?: string;
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  console.log('[aggregate-external-jobs] Starting job aggregation...');
+
+  try {
+    // Create Supabase client with service role
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Parse request body for manual triggers
+    let manualQuery = null;
+    let manualLocation = null;
+    try {
+      const body = await req.json();
+      manualQuery = body.query;
+      manualLocation = body.location;
+    } catch {
+      // No body provided, use default queries
+    }
+
+    const searchQueries = manualQuery 
+      ? [{ query: manualQuery, location: manualLocation || 'United States' }]
+      : SEARCH_QUERIES;
+
+    // Create log entry
+    const { data: logEntry, error: logError } = await supabase
+      .from('job_aggregator_logs')
+      .insert({
+        run_type: manualQuery ? 'manual' : 'scheduled',
+        search_query: searchQueries.map(q => q.query).join(', '),
+        location: searchQueries.map(q => q.location).join(', '),
+        status: 'running'
+      })
+      .select()
+      .single();
+
+    if (logError) {
+      console.error('[aggregate-external-jobs] Error creating log entry:', logError);
+    }
+
+    let totalFetched = 0;
+    let totalAdded = 0;
+    let totalUpdated = 0;
+    let totalSkipped = 0;
+
+    // Run each search query
+    for (const searchConfig of searchQueries) {
+      console.log(`[aggregate-external-jobs] Searching for "${searchConfig.query}" in ${searchConfig.location}`);
+      
+      try {
+        // Call n8n webhook
+        const response = await fetch(N8N_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: searchConfig.query,
+            location: searchConfig.location,
+            datePosted: 'week',
+            numPages: 2,
+          })
+        });
+
+        if (!response.ok) {
+          console.error(`[aggregate-external-jobs] n8n webhook returned ${response.status}`);
+          continue;
+        }
+
+        const result = await response.json();
+
+        if (!result.success || !result.jobs) {
+          console.error(`[aggregate-external-jobs] Search failed for ${searchConfig.query}:`, result);
+          continue;
+        }
+
+        console.log(`[aggregate-external-jobs] Received ${result.jobs.length} jobs for "${searchConfig.query}"`);
+        totalFetched += result.jobs.length;
+
+        // Upsert jobs into database
+        for (const job of result.jobs as ExternalJob[]) {
+          if (!job.externalId || !job.title || !job.company || !job.applyLink) {
+            console.log('[aggregate-external-jobs] Skipping invalid job:', job.title);
+            totalSkipped++;
+            continue;
+          }
+
+          const { data: existingJob } = await supabase
+            .from('external_jobs')
+            .select('id')
+            .eq('external_id', job.externalId)
+            .single();
+
+          const jobData = {
+            title: job.title,
+            company: job.company,
+            company_logo: job.companyLogo || null,
+            location: job.location || null,
+            city: job.city || null,
+            state: job.state || null,
+            country: job.country || 'US',
+            is_remote: job.isRemote || false,
+            description: job.description || null,
+            description_snippet: job.descriptionSnippet || job.description?.substring(0, 500) || null,
+            employment_type: job.employmentType || null,
+            salary_min: job.salaryMin || null,
+            salary_max: job.salaryMax || null,
+            salary_period: job.salaryPeriod || null,
+            salary_display: job.salaryDisplay || null,
+            apply_link: job.applyLink,
+            apply_is_direct: job.applyIsDirect || false,
+            source: job.source || null,
+            source_link: job.sourceLink || null,
+            posted_at: job.postedAt || null,
+            expires_at: job.expiresAt || null,
+            required_experience_months: job.requiresExperience || null,
+            required_skills: job.requiredSkills || [],
+            required_education: job.requiredEducation || null,
+            search_query: searchConfig.query,
+            fetched_at: new Date().toISOString(),
+            is_active: true
+          };
+
+          if (existingJob) {
+            // Update existing job
+            const { error: updateError } = await supabase
+              .from('external_jobs')
+              .update({
+                ...jobData,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingJob.id);
+            
+            if (updateError) {
+              console.error('[aggregate-external-jobs] Update error:', updateError);
+            } else {
+              totalUpdated++;
+            }
+          } else {
+            // Insert new job
+            const { error: insertError } = await supabase
+              .from('external_jobs')
+              .insert({
+                external_id: job.externalId,
+                ...jobData
+              });
+
+            if (insertError) {
+              if (insertError.code === '23505') {
+                totalSkipped++;
+              } else {
+                console.error('[aggregate-external-jobs] Insert error:', insertError);
+              }
+            } else {
+              totalAdded++;
+            }
+          }
+        }
+
+        // Small delay between searches to respect rate limits
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+      } catch (error) {
+        console.error(`[aggregate-external-jobs] Error processing "${searchConfig.query}":`, error);
+      }
+    }
+
+    // Mark old jobs as inactive (not seen in 2 weeks)
+    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const { error: deactivateError } = await supabase
+      .from('external_jobs')
+      .update({ is_active: false })
+      .lt('fetched_at', twoWeeksAgo);
+
+    if (deactivateError) {
+      console.error('[aggregate-external-jobs] Error deactivating old jobs:', deactivateError);
+    }
+
+    // Update log entry
+    if (logEntry) {
+      await supabase
+        .from('job_aggregator_logs')
+        .update({
+          jobs_fetched: totalFetched,
+          jobs_added: totalAdded,
+          jobs_updated: totalUpdated,
+          jobs_skipped: totalSkipped,
+          status: 'success',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', logEntry.id);
+    }
+
+    console.log(`[aggregate-external-jobs] Completed. Fetched: ${totalFetched}, Added: ${totalAdded}, Updated: ${totalUpdated}, Skipped: ${totalSkipped}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        fetched: totalFetched,
+        added: totalAdded,
+        updated: totalUpdated,
+        skipped: totalSkipped
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('[aggregate-external-jobs] Aggregation failed:', error);
+    return new Response(
+      JSON.stringify({ success: false, error: errorMessage }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+});

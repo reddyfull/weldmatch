@@ -273,6 +273,156 @@ export type Database = {
           },
         ]
       }
+      external_jobs: {
+        Row: {
+          apply_is_direct: boolean | null
+          apply_link: string
+          city: string | null
+          company: string
+          company_logo: string | null
+          country: string | null
+          created_at: string | null
+          description: string | null
+          description_snippet: string | null
+          employment_type: string | null
+          expires_at: string | null
+          external_id: string
+          fetched_at: string | null
+          id: string
+          is_active: boolean | null
+          is_remote: boolean | null
+          location: string | null
+          posted_at: string | null
+          required_education: string | null
+          required_experience_months: number | null
+          required_skills: string[] | null
+          salary_display: string | null
+          salary_max: number | null
+          salary_min: number | null
+          salary_period: string | null
+          search_query: string | null
+          source: string | null
+          source_link: string | null
+          state: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          apply_is_direct?: boolean | null
+          apply_link: string
+          city?: string | null
+          company: string
+          company_logo?: string | null
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          description_snippet?: string | null
+          employment_type?: string | null
+          expires_at?: string | null
+          external_id: string
+          fetched_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_remote?: boolean | null
+          location?: string | null
+          posted_at?: string | null
+          required_education?: string | null
+          required_experience_months?: number | null
+          required_skills?: string[] | null
+          salary_display?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          salary_period?: string | null
+          search_query?: string | null
+          source?: string | null
+          source_link?: string | null
+          state?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          apply_is_direct?: boolean | null
+          apply_link?: string
+          city?: string | null
+          company?: string
+          company_logo?: string | null
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          description_snippet?: string | null
+          employment_type?: string | null
+          expires_at?: string | null
+          external_id?: string
+          fetched_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_remote?: boolean | null
+          location?: string | null
+          posted_at?: string | null
+          required_education?: string | null
+          required_experience_months?: number | null
+          required_skills?: string[] | null
+          salary_display?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          salary_period?: string | null
+          search_query?: string | null
+          source?: string | null
+          source_link?: string | null
+          state?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      job_aggregator_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          jobs_added: number | null
+          jobs_fetched: number | null
+          jobs_skipped: number | null
+          jobs_updated: number | null
+          location: string | null
+          run_type: string
+          search_query: string | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          jobs_added?: number | null
+          jobs_fetched?: number | null
+          jobs_skipped?: number | null
+          jobs_updated?: number | null
+          location?: string | null
+          run_type: string
+          search_query?: string | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          jobs_added?: number | null
+          jobs_fetched?: number | null
+          jobs_skipped?: number | null
+          jobs_updated?: number | null
+          location?: string | null
+          run_type?: string
+          search_query?: string | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           applications_count: number | null
@@ -453,6 +603,75 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      welder_job_interactions: {
+        Row: {
+          clicked_apply_at: string | null
+          created_at: string | null
+          external_job_id: string
+          first_viewed_at: string | null
+          id: string
+          marked_applied_at: string | null
+          match_reason: string | null
+          match_score: number | null
+          missing_skills: string[] | null
+          notes: string | null
+          saved_at: string | null
+          status: string | null
+          status_updated_at: string | null
+          updated_at: string | null
+          welder_id: string
+        }
+        Insert: {
+          clicked_apply_at?: string | null
+          created_at?: string | null
+          external_job_id: string
+          first_viewed_at?: string | null
+          id?: string
+          marked_applied_at?: string | null
+          match_reason?: string | null
+          match_score?: number | null
+          missing_skills?: string[] | null
+          notes?: string | null
+          saved_at?: string | null
+          status?: string | null
+          status_updated_at?: string | null
+          updated_at?: string | null
+          welder_id: string
+        }
+        Update: {
+          clicked_apply_at?: string | null
+          created_at?: string | null
+          external_job_id?: string
+          first_viewed_at?: string | null
+          id?: string
+          marked_applied_at?: string | null
+          match_reason?: string | null
+          match_score?: number | null
+          missing_skills?: string[] | null
+          notes?: string | null
+          saved_at?: string | null
+          status?: string | null
+          status_updated_at?: string | null
+          updated_at?: string | null
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "welder_job_interactions_external_job_id_fkey"
+            columns: ["external_job_id"]
+            isOneToOne: false
+            referencedRelation: "external_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "welder_job_interactions_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: false
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       welder_profiles: {
         Row: {
