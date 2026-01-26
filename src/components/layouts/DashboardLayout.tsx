@@ -24,6 +24,7 @@ import {
   Users,
   PlusCircle,
   Search,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ interface DashboardLayoutProps {
 const welderNavItems: NavItem[] = [
   { label: "Dashboard", href: "/welder/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
   { label: "My Profile", href: "/welder/profile/edit", icon: <User className="w-5 h-5" /> },
+  { label: "Career Coach", href: "/welder/career-coach", icon: <Sparkles className="w-5 h-5" /> },
   { label: "Job Search", href: "/welder/jobs", icon: <Search className="w-5 h-5" /> },
   { label: "Applications", href: "/welder/applications", icon: <FileText className="w-5 h-5" /> },
   { label: "Documents", href: "/welder/documents", icon: <Settings className="w-5 h-5" /> },
