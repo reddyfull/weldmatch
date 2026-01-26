@@ -349,19 +349,32 @@ export function ExternalJobsList() {
               </Badge>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            {refreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            <span className="ml-2 hidden sm:inline">Refresh</span>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="gap-2"
+              >
+                {refreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 text-primary" />
+                )}
+                <span className="hidden sm:inline">
+                  {refreshing ? 'Scoring Jobs...' : 'Score with My Profile'}
+                </span>
+                <span className="sm:hidden">
+                  {refreshing ? '...' : 'Score'}
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Fetch latest jobs and calculate AI match scores based on your skills, experience, and certifications</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         <p className="text-sm text-muted-foreground flex items-center gap-2">
