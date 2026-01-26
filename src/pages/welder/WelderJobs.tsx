@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -40,9 +41,11 @@ import {
   Send,
   Star,
   HelpCircle,
+  Globe,
 } from 'lucide-react';
 import { WELD_PROCESSES, WELD_POSITIONS } from '@/constants/welderOptions';
 import { SkillsGapModal } from '@/components/welder/SkillsGapModal';
+import { ExternalJobsList } from '@/components/welder/ExternalJobsList';
 
 interface Job {
   id: string;
@@ -103,6 +106,9 @@ export default function WelderJobs() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const { apply, applying } = useApplyToJob();
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState('weldmatch');
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [welderProfile, setWelderProfile] = useState<WelderProfile | null>(null);
@@ -385,6 +391,22 @@ export default function WelderJobs() {
           </p>
         </div>
 
+        {/* Tabs for WeldMatch Jobs vs External Jobs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="weldmatch" className="flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              WeldMatch Jobs
+            </TabsTrigger>
+            <TabsTrigger value="external" className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              External Jobs
+            </TabsTrigger>
+          </TabsList>
+
+          {/* WeldMatch Jobs Tab */}
+          <TabsContent value="weldmatch" className="mt-6 space-y-6">
+
         {/* Search and Filters */}
         <Card>
           <CardContent className="pt-6">
@@ -581,96 +603,103 @@ export default function WelderJobs() {
           </div>
         )}
 
-        {/* Apply Dialog */}
-        <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Apply to {selectedJob?.title}</DialogTitle>
-              <DialogDescription>
-                at {selectedJob?.employer_profiles?.company_name}
-              </DialogDescription>
-            </DialogHeader>
+          {/* Apply Dialog */}
+          <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Apply to {selectedJob?.title}</DialogTitle>
+                <DialogDescription>
+                  at {selectedJob?.employer_profiles?.company_name}
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="space-y-4 py-4">
-              {welderProfile && selectedJob && (
-                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                  <span className="text-sm font-medium">Your Match Score</span>
-                  <Badge className={getMatchColor(calculateMatchScore(selectedJob))}>
-                    {calculateMatchScore(selectedJob)}%
-                  </Badge>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Cover Message (Optional)
-                </label>
-                <Textarea
-                  placeholder="Tell the employer why you're a great fit for this role..."
-                  value={coverMessage}
-                  onChange={(e) => setCoverMessage(e.target.value)}
-                  rows={4}
-                />
-                <p className="text-xs text-muted-foreground">
-                  A personalized message can help you stand out from other applicants.
-                </p>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setApplyDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleApply} disabled={applying}>
-                {applying ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Applying...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Submit Application
-                  </>
+              <div className="space-y-4 py-4">
+                {welderProfile && selectedJob && (
+                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                    <span className="text-sm font-medium">Your Match Score</span>
+                    <Badge className={getMatchColor(calculateMatchScore(selectedJob))}>
+                      {calculateMatchScore(selectedJob)}%
+                    </Badge>
+                  </div>
                 )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
-        {/* Skills Gap Modal */}
-        {skillsGapJob && welderProfile && (
-          <SkillsGapModal
-            isOpen={skillsGapModalOpen}
-            onClose={() => setSkillsGapModalOpen(false)}
-            jobId={skillsGapJob.id}
-            jobTitle={skillsGapJob.title}
-            companyName={skillsGapJob.employer_profiles?.company_name || 'Company'}
-            jobData={{
-              processes: skillsGapJob.required_processes || [],
-              positions: skillsGapJob.required_positions || [],
-              certifications: skillsGapJob.required_certs || [],
-              experienceMin: skillsGapJob.experience_min || 0,
-              location: formatLocation(skillsGapJob),
-              salaryMin: skillsGapJob.pay_min,
-              salaryMax: skillsGapJob.pay_max,
-              description: skillsGapJob.description,
-            }}
-            welderData={{
-              id: welderProfile.user_id,
-              name: profile?.full_name || 'Welder',
-              experience: welderProfile.years_experience || 0,
-              processes: welderProfile.weld_processes || [],
-              positions: welderProfile.weld_positions || [],
-              certifications: welderProfile.certifications
-                ?.filter(c => c.verification_status === 'verified')
-                .map(c => c.cert_type) || [],
-              location: `${welderProfile.city || ''}, ${welderProfile.state || ''}`.trim(),
-            }}
-            onApply={handleApplyFromModal}
-            currentMatchScore={calculateMatchScore(skillsGapJob)}
-          />
-        )}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Cover Message (Optional)
+                  </label>
+                  <Textarea
+                    placeholder="Tell the employer why you're a great fit for this role..."
+                    value={coverMessage}
+                    onChange={(e) => setCoverMessage(e.target.value)}
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    A personalized message can help you stand out from other applicants.
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setApplyDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleApply} disabled={applying}>
+                  {applying ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Applying...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Submit Application
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Skills Gap Modal */}
+          {skillsGapJob && welderProfile && (
+            <SkillsGapModal
+              isOpen={skillsGapModalOpen}
+              onClose={() => setSkillsGapModalOpen(false)}
+              jobId={skillsGapJob.id}
+              jobTitle={skillsGapJob.title}
+              companyName={skillsGapJob.employer_profiles?.company_name || 'Company'}
+              jobData={{
+                processes: skillsGapJob.required_processes || [],
+                positions: skillsGapJob.required_positions || [],
+                certifications: skillsGapJob.required_certs || [],
+                experienceMin: skillsGapJob.experience_min || 0,
+                location: formatLocation(skillsGapJob),
+                salaryMin: skillsGapJob.pay_min,
+                salaryMax: skillsGapJob.pay_max,
+                description: skillsGapJob.description,
+              }}
+              welderData={{
+                id: welderProfile.user_id,
+                name: profile?.full_name || 'Welder',
+                experience: welderProfile.years_experience || 0,
+                processes: welderProfile.weld_processes || [],
+                positions: welderProfile.weld_positions || [],
+                certifications: welderProfile.certifications
+                  ?.filter(c => c.verification_status === 'verified')
+                  .map(c => c.cert_type) || [],
+                location: `${welderProfile.city || ''}, ${welderProfile.state || ''}`.trim(),
+              }}
+              onApply={handleApplyFromModal}
+              currentMatchScore={calculateMatchScore(skillsGapJob)}
+            />
+          )}
+          </TabsContent>
+
+          {/* External Jobs Tab */}
+          <TabsContent value="external" className="mt-6">
+            <ExternalJobsList />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
