@@ -147,13 +147,16 @@ export function ExternalJobsList() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      const { error } = await supabase.functions.invoke('aggregate-external-jobs');
+      // Pass welderId for AI match scoring
+      const { error } = await supabase.functions.invoke('aggregate-external-jobs', {
+        body: { welderId: user?.id },
+      });
       if (error) throw error;
       
       await fetchJobs();
       toast({
         title: 'Jobs Refreshed',
-        description: 'External jobs have been updated',
+        description: welderProfile ? 'External jobs updated with AI match scores' : 'External jobs have been updated',
       });
     } catch (error) {
       console.error('Error refreshing jobs:', error);
