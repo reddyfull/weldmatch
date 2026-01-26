@@ -58,7 +58,7 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
     fetchCerts();
   }, [welderProfile?.id]);
 
-  // Load stored profile optimization result from career_coach_results
+  // Load stored profile strength result
   useEffect(() => {
     async function loadStoredResult() {
       if (!welderProfile?.id) {
@@ -67,21 +67,18 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
       }
       
       try {
-        // Using any cast since types haven't been regenerated yet
         const { data, error } = await (supabase
-          .from('career_coach_results' as any) as any)
+          .from('profile_strength_results' as any) as any)
           .select('result_data, updated_at')
           .eq('welder_id', welderProfile.id)
           .single();
 
         if (data && !error && data.result_data) {
-          // We have stored career coach data - extract profile strength info
+          setResult(data.result_data as ProfileOptimizationResult);
           setHasStoredResult(true);
-          // For now, just mark that we have stored data so we don't auto-regenerate
-          // The ProfileStrength uses a different endpoint than CareerCoach
         }
       } catch (err) {
-        console.log('No stored results found');
+        console.log('No stored profile strength results found');
       } finally {
         setIsLoadingStored(false);
       }
@@ -116,10 +113,30 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
           issue_date: c.issue_date,
           expiry_date: c.expiry_date
         })),
-        workHistory: [] // TODO: Add work history when available
+        workHistory: []
       });
 
       setResult(response);
+
+      // Persist the result to the database
+      const profileSnapshot = {
+        city: welderProfile.city,
+        state: welderProfile.state,
+        years_experience: welderProfile.years_experience,
+        weld_processes: welderProfile.weld_processes,
+        weld_positions: welderProfile.weld_positions,
+        bio: welderProfile.bio
+      };
+      const certsSnapshot = certifications.map(c => c.cert_type);
+
+      await (supabase.from('profile_strength_results' as any) as any).upsert({
+        welder_id: welderProfile.id,
+        result_data: response,
+        profile_snapshot: profileSnapshot,
+        certifications_snapshot: certsSnapshot
+      }, { onConflict: 'welder_id' });
+
+      setHasStoredResult(true);
     } catch (err) {
       console.error('Profile optimization failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to analyze profile');
