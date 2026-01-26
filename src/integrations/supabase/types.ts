@@ -292,6 +292,9 @@ export type Database = {
           is_active: boolean | null
           is_remote: boolean | null
           location: string | null
+          match_reason: string | null
+          match_score: number | null
+          missing_skills: string[] | null
           posted_at: string | null
           required_education: string | null
           required_experience_months: number | null
@@ -325,6 +328,9 @@ export type Database = {
           is_active?: boolean | null
           is_remote?: boolean | null
           location?: string | null
+          match_reason?: string | null
+          match_score?: number | null
+          missing_skills?: string[] | null
           posted_at?: string | null
           required_education?: string | null
           required_experience_months?: number | null
@@ -358,6 +364,9 @@ export type Database = {
           is_active?: boolean | null
           is_remote?: boolean | null
           location?: string | null
+          match_reason?: string | null
+          match_score?: number | null
+          missing_skills?: string[] | null
           posted_at?: string | null
           required_education?: string | null
           required_experience_months?: number | null

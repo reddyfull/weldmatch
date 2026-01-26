@@ -13,6 +13,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   MapPin,
   DollarSign,
   Briefcase,
@@ -21,6 +26,8 @@ import {
   BookmarkCheck,
   CheckCircle,
   Building,
+  AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 
 interface ExternalJobCardProps {
@@ -38,12 +45,52 @@ interface ExternalJobCardProps {
     description_snippet: string | null;
     match_score?: number | null;
     match_reason?: string | null;
+    missing_skills?: string[] | null;
     status?: string;
   };
   isLoggedIn: boolean;
   onSave: () => void;
   onApplyClick: () => void;
   onMarkApplied: (notes?: string) => void;
+}
+
+function MatchScoreBadge({ score }: { score: number }) {
+  const getScoreConfig = (score: number) => {
+    if (score >= 85) {
+      return {
+        label: 'Excellent Match',
+        className: 'bg-green-500 text-white',
+        ringColor: 'ring-green-500/20',
+      };
+    }
+    if (score >= 70) {
+      return {
+        label: 'Good Match',
+        className: 'bg-blue-500 text-white',
+        ringColor: 'ring-blue-500/20',
+      };
+    }
+    if (score >= 50) {
+      return {
+        label: 'Fair Match',
+        className: 'bg-yellow-500 text-white',
+        ringColor: 'ring-yellow-500/20',
+      };
+    }
+    return {
+      label: 'Low Match',
+      className: 'bg-muted text-muted-foreground',
+      ringColor: 'ring-muted/20',
+    };
+  };
+
+  const config = getScoreConfig(score);
+
+  return (
+    <div className={`${config.className} rounded-full w-12 h-12 flex items-center justify-center font-bold text-sm ring-4 ${config.ringColor}`}>
+      {score}%
+    </div>
+  );
 }
 
 export function ExternalJobCard({ 
@@ -67,15 +114,9 @@ export function ExternalJobCard({
     not_interested: 'bg-muted text-muted-foreground',
   };
 
-  const getMatchScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400';
-    if (score >= 60) return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400';
-    if (score >= 40) return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400';
-    return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400';
-  };
-
   const isSaved = job.status === 'saved';
   const isApplied = job.status === 'applied';
+  const hasMissingSkills = job.missing_skills && job.missing_skills.length > 0;
 
   const handleApplyButtonClick = () => {
     onApplyClick();
@@ -108,12 +149,30 @@ export function ExternalJobCard({
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-              {job.match_score && (
-                <Badge className={getMatchScoreColor(job.match_score)}>
-                  {job.match_score}% Match
-                </Badge>
+            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+              {/* Match Score Badge */}
+              {job.match_score != null && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="cursor-help">
+                      <MatchScoreBadge score={job.match_score} />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs">
+                    <div className="space-y-1">
+                      <p className="font-medium flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        AI Match Score
+                      </p>
+                      {job.match_reason && (
+                        <p className="text-sm">{job.match_reason}</p>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               )}
+              
+              {/* Status Badge */}
               {job.status && job.status !== 'new' && (
                 <Badge className={statusColors[job.status] || statusColors.new}>
                   {job.status.replace('_', ' ').toUpperCase()}
@@ -122,11 +181,33 @@ export function ExternalJobCard({
             </div>
           </div>
 
-          {/* Match Reason */}
-          {job.match_reason && (
+          {/* Match Reason (shown inline if no tooltip) */}
+          {job.match_reason && !job.match_score && (
             <p className="text-xs text-primary bg-primary/5 p-2 rounded-md">
               💡 {job.match_reason}
             </p>
+          )}
+
+          {/* Missing Skills Alert */}
+          {hasMissingSkills && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 p-2 rounded-md cursor-help">
+                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>Skills to develop: {job.missing_skills!.slice(0, 2).join(', ')}{job.missing_skills!.length > 2 ? ` +${job.missing_skills!.length - 2} more` : ''}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs">
+                <div className="space-y-1">
+                  <p className="font-medium">Skills needed for this job:</p>
+                  <ul className="text-sm list-disc pl-4">
+                    {job.missing_skills!.map((skill, i) => (
+                      <li key={i}>{skill}</li>
+                    ))}
+                  </ul>
+                </div>
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {/* Job Details */}

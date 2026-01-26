@@ -33,7 +33,8 @@ interface ExternalJob {
   salaryMax?: number;
   salaryPeriod?: string;
   salaryDisplay?: string;
-  applyLink: string;
+  applyLink?: string;
+  sourceJobUrl?: string;
   applyIsDirect?: boolean;
   source?: string;
   sourceLink?: string;
@@ -41,8 +42,27 @@ interface ExternalJob {
   expiresAt?: string;
   requiresExperience?: number;
   requiredSkills?: string[];
+  detectedProcesses?: string[];
+  detectedCerts?: string[];
   requiredEducation?: string;
   searchQuery?: string;
+  // AI Match Scoring fields
+  matchScore?: number;
+  matchReason?: string;
+  missingSkills?: string[];
+}
+
+interface WelderProfileForMatching {
+  name: string;
+  yearsExperience: number;
+  weldingProcesses: string[];
+  certifications: string[];
+  preferredLocation: string;
+  willingToRelocate: boolean;
+  preferredSalary?: number;
+  salaryPeriod?: string;
+  industries?: string[];
+  shiftPreference?: string;
 }
 
 serve(async (req) => {
@@ -63,10 +83,49 @@ serve(async (req) => {
     // Parse request body for manual triggers
     let manualQuery = null;
     let manualLocation = null;
+    let welderId: string | null = null;
+    let welderProfile: WelderProfileForMatching | null = null;
+
     try {
       const body = await req.json();
       manualQuery = body.query;
       manualLocation = body.location;
+      welderId = body.welderId || null;
+      
+      // If welderId provided, fetch their profile for match scoring
+      if (welderId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', welderId)
+          .single();
+
+        const { data: welderData } = await supabase
+          .from('welder_profiles')
+          .select('*')
+          .eq('user_id', welderId)
+          .single();
+
+        const { data: certs } = await supabase
+          .from('certifications')
+          .select('cert_type')
+          .eq('welder_id', welderData?.id)
+          .eq('verification_status', 'verified');
+
+        if (welderData) {
+          welderProfile = {
+            name: profile?.full_name || 'Welder',
+            yearsExperience: welderData.years_experience || 0,
+            weldingProcesses: welderData.weld_processes || [],
+            certifications: certs?.map(c => c.cert_type) || [],
+            preferredLocation: `${welderData.city || ''}, ${welderData.state || ''}`.trim() || 'United States',
+            willingToRelocate: welderData.willing_to_travel || false,
+            preferredSalary: welderData.desired_salary_min || undefined,
+            salaryPeriod: welderData.salary_type || 'hourly',
+          };
+          console.log('[aggregate-external-jobs] Fetched welder profile for match scoring:', welderProfile.name);
+        }
+      }
     } catch {
       // No body provided, use default queries
     }
@@ -101,16 +160,23 @@ serve(async (req) => {
       console.log(`[aggregate-external-jobs] Searching for "${searchConfig.query}" in ${searchConfig.location}`);
       
       try {
+        // Build request body - include welderProfile if available for AI scoring
+        const requestBody: Record<string, unknown> = {
+          query: searchConfig.query,
+          location: searchConfig.location,
+          datePosted: 'week',
+          numPages: 2,
+        };
+
+        if (welderProfile) {
+          requestBody.welderProfile = welderProfile;
+        }
+
         // Call n8n webhook
         const response = await fetch(N8N_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: searchConfig.query,
-            location: searchConfig.location,
-            datePosted: 'week',
-            numPages: 2,
-          })
+          body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
@@ -128,12 +194,16 @@ serve(async (req) => {
           continue;
         }
 
-        console.log(`[aggregate-external-jobs] Received ${result.jobs.length} jobs for "${searchConfig.query}"`);
+        const hasMatchScoring = result.hasMatchScoring === true;
+        console.log(`[aggregate-external-jobs] Received ${result.jobs.length} jobs for "${searchConfig.query}" (matchScoring: ${hasMatchScoring})`);
         totalFetched += result.jobs.length;
 
         // Upsert jobs into database
         for (const job of result.jobs as ExternalJob[]) {
-          if (!job.externalId || !job.title || !job.company || !job.applyLink) {
+          const jobId = job.externalId;
+          const applyUrl = job.applyLink || job.sourceJobUrl;
+          
+          if (!jobId || !job.title || !job.company || !applyUrl) {
             console.log('[aggregate-external-jobs] Skipping invalid job:', job.title);
             totalSkipped++;
             continue;
@@ -142,7 +212,7 @@ serve(async (req) => {
           const { data: existingJob } = await supabase
             .from('external_jobs')
             .select('id')
-            .eq('external_id', job.externalId)
+            .eq('external_id', jobId)
             .single();
 
           const jobData = {
@@ -161,18 +231,24 @@ serve(async (req) => {
             salary_max: job.salaryMax || null,
             salary_period: job.salaryPeriod || null,
             salary_display: job.salaryDisplay || null,
-            apply_link: job.applyLink,
+            apply_link: applyUrl,
             apply_is_direct: job.applyIsDirect || false,
             source: job.source || null,
             source_link: job.sourceLink || null,
             posted_at: job.postedAt || null,
             expires_at: job.expiresAt || null,
             required_experience_months: job.requiresExperience || null,
-            required_skills: job.requiredSkills || [],
+            required_skills: job.detectedProcesses || job.requiredSkills || [],
             required_education: job.requiredEducation || null,
             search_query: searchConfig.query,
             fetched_at: new Date().toISOString(),
-            is_active: true
+            is_active: true,
+            // AI Match scoring fields (only if scoring was performed)
+            ...(hasMatchScoring && {
+              match_score: job.matchScore || null,
+              match_reason: job.matchReason || null,
+              missing_skills: job.missingSkills || [],
+            }),
           };
 
           if (existingJob) {
@@ -195,7 +271,7 @@ serve(async (req) => {
             const { error: insertError } = await supabase
               .from('external_jobs')
               .insert({
-                external_id: job.externalId,
+                external_id: jobId,
                 ...jobData
               });
 
@@ -253,7 +329,8 @@ serve(async (req) => {
         fetched: totalFetched,
         added: totalAdded,
         updated: totalUpdated,
-        skipped: totalSkipped
+        skipped: totalSkipped,
+        hasMatchScoring: !!welderProfile
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
