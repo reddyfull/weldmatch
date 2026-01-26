@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWelderProfile, useUserProfile } from '@/hooks/useUserProfile';
@@ -72,6 +73,7 @@ export function ExternalJobsList() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [hasMatchScoring, setHasMatchScoring] = useState(false);
+  const [lastScoredAt, setLastScoredAt] = useState<Date | null>(null);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -154,6 +156,7 @@ export function ExternalJobsList() {
       if (error) throw error;
       
       await fetchJobs();
+      setLastScoredAt(new Date());
       toast({
         title: 'Jobs Refreshed',
         description: welderProfile ? 'External jobs updated with AI match scores' : 'External jobs have been updated',
@@ -377,10 +380,18 @@ export function ExternalJobsList() {
           </Tooltip>
         </div>
 
-        <p className="text-sm text-muted-foreground flex items-center gap-2">
-          <Clock className="h-3.5 w-3.5" />
-          Jobs from Indeed, LinkedIn, Glassdoor & more • Updated daily at 5:00 AM EST
-        </p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
+            Jobs from Indeed, LinkedIn, Glassdoor & more • Updated daily
+          </span>
+          {lastScoredAt && (
+            <span className="flex items-center gap-1.5 text-primary/80">
+              <Sparkles className="h-3.5 w-3.5" />
+              Last scored {formatDistanceToNow(lastScoredAt, { addSuffix: true })}
+            </span>
+          )}
+        </div>
 
         {/* Filters */}
         <Card>
