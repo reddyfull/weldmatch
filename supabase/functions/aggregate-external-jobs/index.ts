@@ -118,9 +118,12 @@ serve(async (req) => {
           continue;
         }
 
-        const result = await response.json();
+        const rawResult = await response.json();
+        
+        // Handle n8n response - it returns an array with the result object inside
+        const result = Array.isArray(rawResult) ? rawResult[0] : rawResult;
 
-        if (!result.success || !result.jobs) {
+        if (!result?.success || !result?.jobs) {
           console.error(`[aggregate-external-jobs] Search failed for ${searchConfig.query}:`, result);
           continue;
         }
