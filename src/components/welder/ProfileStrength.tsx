@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,9 @@ import {
   RefreshCw,
   Zap,
   Target,
-  Loader2
+  Loader2,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile, useWelderProfile } from '@/hooks/useUserProfile';
@@ -27,9 +29,19 @@ import {
   ProfileOptimizationResult,
   getProfileStrengthBadge 
 } from '@/lib/weldmatch-ai';
+import { formatDistanceToNow } from 'date-fns';
 
 interface ProfileStrengthProps {
   compact?: boolean;
+}
+
+interface ProfileSnapshot {
+  city?: string | null;
+  state?: string | null;
+  years_experience?: number | null;
+  weld_processes?: string[] | null;
+  weld_positions?: string[] | null;
+  bio?: string | null;
 }
 
 export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
@@ -44,6 +56,9 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [certifications, setCertifications] = useState<any[]>([]);
   const [hasStoredResult, setHasStoredResult] = useState(false);
+  const [lastAnalyzedAt, setLastAnalyzedAt] = useState<string | null>(null);
+  const [storedProfileSnapshot, setStoredProfileSnapshot] = useState<ProfileSnapshot | null>(null);
+  const [storedCertsSnapshot, setStoredCertsSnapshot] = useState<string[] | null>(null);
 
   // Fetch certifications
   useEffect(() => {
@@ -69,13 +84,16 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
       try {
         const { data, error } = await (supabase
           .from('profile_strength_results' as any) as any)
-          .select('result_data, updated_at')
+          .select('result_data, updated_at, profile_snapshot, certifications_snapshot')
           .eq('welder_id', welderProfile.id)
           .single();
 
         if (data && !error && data.result_data) {
           setResult(data.result_data as ProfileOptimizationResult);
           setHasStoredResult(true);
+          setLastAnalyzedAt(data.updated_at);
+          setStoredProfileSnapshot(data.profile_snapshot as ProfileSnapshot);
+          setStoredCertsSnapshot(data.certifications_snapshot as string[]);
         }
       } catch (err) {
         console.log('No stored profile strength results found');
@@ -85,6 +103,37 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
     }
     loadStoredResult();
   }, [welderProfile?.id]);
+
+  // Detect if profile has changed since last analysis
+  const profileHasChanged = useMemo(() => {
+    if (!storedProfileSnapshot || !welderProfile) return false;
+
+    const currentSnapshot: ProfileSnapshot = {
+      city: welderProfile.city,
+      state: welderProfile.state,
+      years_experience: welderProfile.years_experience,
+      weld_processes: welderProfile.weld_processes,
+      weld_positions: welderProfile.weld_positions,
+      bio: welderProfile.bio
+    };
+
+    const currentCerts = certifications.map(c => c.cert_type).sort();
+    const storedCerts = (storedCertsSnapshot || []).sort();
+
+    // Compare profile snapshots
+    const profileChanged = 
+      currentSnapshot.city !== storedProfileSnapshot.city ||
+      currentSnapshot.state !== storedProfileSnapshot.state ||
+      currentSnapshot.years_experience !== storedProfileSnapshot.years_experience ||
+      currentSnapshot.bio !== storedProfileSnapshot.bio ||
+      JSON.stringify(currentSnapshot.weld_processes?.sort()) !== JSON.stringify(storedProfileSnapshot.weld_processes?.sort()) ||
+      JSON.stringify(currentSnapshot.weld_positions?.sort()) !== JSON.stringify(storedProfileSnapshot.weld_positions?.sort());
+
+    // Compare certifications
+    const certsChanged = JSON.stringify(currentCerts) !== JSON.stringify(storedCerts);
+
+    return profileChanged || certsChanged;
+  }, [welderProfile, certifications, storedProfileSnapshot, storedCertsSnapshot]);
 
   const analyzeProfile = useCallback(async () => {
     if (!user?.id || !profile || !welderProfile) return;
@@ -133,10 +182,14 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
         welder_id: welderProfile.id,
         result_data: response,
         profile_snapshot: profileSnapshot,
-        certifications_snapshot: certsSnapshot
+        certifications_snapshot: certsSnapshot,
+        updated_at: new Date().toISOString()
       }, { onConflict: 'welder_id' });
 
       setHasStoredResult(true);
+      setLastAnalyzedAt(new Date().toISOString());
+      setStoredProfileSnapshot(profileSnapshot);
+      setStoredCertsSnapshot(certsSnapshot);
     } catch (err) {
       console.error('Profile optimization failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to analyze profile');
@@ -340,8 +393,15 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
               <Target className="h-5 w-5 text-primary" />
               Profile Strength
             </CardTitle>
-            <CardDescription className="mt-1">
-              AI-powered analysis of your career profile
+            <CardDescription className="mt-1 flex items-center gap-2">
+              {lastAnalyzedAt ? (
+                <>
+                  <Clock className="h-3 w-3" />
+                  Updated {formatDistanceToNow(new Date(lastAnalyzedAt), { addSuffix: true })}
+                </>
+              ) : (
+                'AI-powered analysis of your career profile'
+              )}
             </CardDescription>
           </div>
           <Button
@@ -349,14 +409,33 @@ export function ProfileStrength({ compact = false }: ProfileStrengthProps) {
             size="sm"
             onClick={analyzeProfile}
             disabled={isLoading}
+            title={profileHasChanged ? "Profile has changed - refresh recommended" : "Refresh analysis"}
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className={`h-4 w-4 ${profileHasChanged ? 'text-orange-500' : ''}`} />
             )}
           </Button>
         </div>
+        
+        {/* Profile Changed Banner */}
+        {profileHasChanged && !isLoading && (
+          <div className="mt-3 flex items-center gap-2 p-2 rounded-md bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+            <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0" />
+            <p className="text-xs text-orange-700 dark:text-orange-400">
+              Your profile has changed since last analysis.
+            </p>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={analyzeProfile}
+              className="ml-auto h-6 text-xs text-orange-600 hover:text-orange-700"
+            >
+              Refresh
+            </Button>
+          </div>
+        )}
       </CardHeader>
       
       <CardContent className="p-6 space-y-6">
