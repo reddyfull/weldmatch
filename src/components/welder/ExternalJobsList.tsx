@@ -35,6 +35,7 @@ import {
   Sparkles,
   ArrowUpDown,
   AlertTriangle,
+  BookmarkCheck,
 } from 'lucide-react';
 
 interface ExternalJob {
@@ -81,6 +82,7 @@ export function ExternalJobsList() {
   const [sourceFilter, setSourceFilter] = useState('all');
   const [sortBy, setSortBy] = useState<SortOption>('match');
   const [showOnlyGoodMatches, setShowOnlyGoodMatches] = useState(false);
+  const [showOnlySaved, setShowOnlySaved] = useState(false);
 
   useEffect(() => {
     fetchJobs();
@@ -293,6 +295,11 @@ export function ExternalJobsList() {
         if (!job.match_score || job.match_score < 70) return false;
       }
 
+      // Filter for saved jobs only
+      if (showOnlySaved) {
+        if (job.status !== 'saved' && job.status !== 'applied') return false;
+      }
+
       return true;
     });
 
@@ -317,7 +324,7 @@ export function ExternalJobsList() {
     });
 
     return result;
-  }, [jobs, searchQuery, locationFilter, sourceFilter, sortBy, showOnlyGoodMatches]);
+  }, [jobs, searchQuery, locationFilter, sourceFilter, sortBy, showOnlyGoodMatches, showOnlySaved]);
 
   const goodMatchCount = useMemo(() => 
     jobs.filter(j => j.match_score && j.match_score >= 70).length,
@@ -436,17 +443,34 @@ export function ExternalJobsList() {
               </Select>
             </div>
 
-            {/* Good matches toggle */}
-            {hasMatchScoring && (
-              <div className="flex items-center space-x-2 mt-3 pt-3 border-t">
-                <Switch
-                  id="good-matches"
-                  checked={showOnlyGoodMatches}
-                  onCheckedChange={setShowOnlyGoodMatches}
-                />
-                <Label htmlFor="good-matches" className="text-sm cursor-pointer">
-                  Show only good matches (70%+)
-                </Label>
+            {/* Filter toggles */}
+            {(hasMatchScoring || user) && (
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3 pt-3 border-t">
+                {hasMatchScoring && (
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="good-matches"
+                      checked={showOnlyGoodMatches}
+                      onCheckedChange={setShowOnlyGoodMatches}
+                    />
+                    <Label htmlFor="good-matches" className="text-sm cursor-pointer">
+                      Good matches (70%+)
+                    </Label>
+                  </div>
+                )}
+                {user && (
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="saved-jobs"
+                      checked={showOnlySaved}
+                      onCheckedChange={setShowOnlySaved}
+                    />
+                    <Label htmlFor="saved-jobs" className="text-sm cursor-pointer flex items-center gap-1.5">
+                      <BookmarkCheck className="h-3.5 w-3.5" />
+                      Saved jobs only
+                    </Label>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
