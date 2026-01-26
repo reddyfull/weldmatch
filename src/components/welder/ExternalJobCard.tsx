@@ -241,14 +241,41 @@ export function ExternalJobCard({
 
           {/* Footer */}
           <div className="flex items-center justify-between pt-2 border-t">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>via {job.source || 'External'}</span>
-              {job.posted_at && (
-                <>
-                  <span>•</span>
-                  <span>{formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })}</span>
-                </>
+            <div className="flex items-center gap-3">
+              {/* Match Score in Footer */}
+              {job.match_score != null && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold cursor-help ${
+                      job.match_score >= 85 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                      job.match_score >= 70 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                      job.match_score >= 50 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                      'bg-muted text-muted-foreground'
+                    }`}>
+                      <Sparkles className="h-3 w-3" />
+                      {job.match_score}% Match
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <div className="space-y-1">
+                      <p className="font-medium">AI Match Score</p>
+                      {job.match_reason && (
+                        <p className="text-sm">{job.match_reason}</p>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               )}
+              
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>via {job.source || 'External'}</span>
+                {job.posted_at && (
+                  <>
+                    <span>•</span>
+                    <span>{formatDistanceToNow(new Date(job.posted_at), { addSuffix: true })}</span>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
