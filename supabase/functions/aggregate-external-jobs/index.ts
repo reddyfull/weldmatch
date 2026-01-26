@@ -6,99 +6,53 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Note: In this project, N8N_WEBHOOK_URL is also used by the generic n8n-proxy function
-// as a BASE URL (e.g. "https://.../webhook"). This function needs the specific webhook
-// path for the external job aggregator.
-const N8N_WEBHOOK_URL_RAW =
-  Deno.env.get('N8N_WEBHOOK_URL') || 'https://reddyfull.app.n8n.cloud/webhook/aggregate-jobs';
-
+// The n8n webhook URL for the "WeldMatch - External Job Aggregator" workflow.
+// The user confirmed the correct path is /webhook/aggregate-jobs, so we construct
+// the full URL from the n8n cloud domain stored in N8N_WEBHOOK_URL (base URL).
+const N8N_BASE_URL_RAW = Deno.env.get('N8N_WEBHOOK_URL') || '';
 const N8N_API_KEY = Deno.env.get('N8N_API_KEY') || null;
 
-// If the workflow is exposed by a webhook, different environments commonly use:
-// - /webhook/<path>
-// - /webhook-test/<path>
-// Some setups also use the workflow id as the webhook path.
-const N8N_WORKFLOW_ID = 'ssbR8pvbABSybNxl';
+// Normalises and constructs the final webhook URL that hits /webhook/aggregate-jobs.
+function buildWebhookUrl(): string {
+  const base = N8N_BASE_URL_RAW.trim().replace(/\/$/, '');
 
-function normalizeUrl(raw: string) {
-  return raw.trim().replace(/\/$/, '');
-}
-
-function buildCandidateWebhookUrls(raw: string): string[] {
-  const base = normalizeUrl(raw);
-  const urls = new Set<string>();
-
-  const add = (u: string) => {
-    const nu = normalizeUrl(u);
-    if (nu) urls.add(nu);
-  };
-
-  // Always try the raw secret value first.
-  add(base);
-
-  const alreadySpecific = base.includes('aggregate-jobs') || base.includes(N8N_WORKFLOW_ID);
-
-  if (!alreadySpecific) {
-    add(`${base}/aggregate-jobs`);
-    add(`${base}/${N8N_WORKFLOW_ID}`);
+  // If already a full aggregate-jobs URL, use it directly.
+  if (base.includes('aggregate-jobs')) {
+    return base;
   }
 
-  // If the secret is just the domain (e.g. https://<host>), also try adding /webhook + /webhook-test.
-  if (!base.includes('/webhook')) {
-    add(`${base}/webhook/aggregate-jobs`);
-    add(`${base}/webhook/${N8N_WORKFLOW_ID}`);
-    add(`${base}/webhook-test/aggregate-jobs`);
-    add(`${base}/webhook-test/${N8N_WORKFLOW_ID}`);
+  // If it ends with /webhook or /webhook-test, just append the path.
+  if (base.endsWith('/webhook') || base.endsWith('/webhook-test')) {
+    return `${base}/aggregate-jobs`;
   }
 
-  // If this looks like a "webhook" base, also try the test webhook variant.
-  if (base.includes('/webhook') && !base.includes('/webhook-test')) {
-    const testBase = base.replace('/webhook', '/webhook-test');
-    add(testBase);
-    if (!alreadySpecific) {
-      add(`${testBase}/aggregate-jobs`);
-      add(`${testBase}/${N8N_WORKFLOW_ID}`);
+  // If it contains /webhook somewhere in the middle, assume it's a different endpoint
+  // configured for something else – still try /webhook/aggregate-jobs on the host.
+  if (base.includes('/webhook')) {
+    const hostMatch = base.match(/^(https?:\/\/[^\/]+)/);
+    if (hostMatch) {
+      return `${hostMatch[1]}/webhook/aggregate-jobs`;
     }
   }
 
-  return Array.from(urls);
+  // Otherwise, treat the whole thing as the host and append /webhook/aggregate-jobs.
+  return `${base}/webhook/aggregate-jobs`;
 }
 
-const N8N_CANDIDATE_URLS = buildCandidateWebhookUrls(N8N_WEBHOOK_URL_RAW);
+const N8N_WEBHOOK_URL = buildWebhookUrl();
+console.log('[aggregate-external-jobs] Using n8n webhook URL:', N8N_WEBHOOK_URL);
 
 async function postToN8n(payload: Record<string, unknown>) {
-  let lastStatus: number | null = null;
-  let lastBody: string | null = null;
+  const res = await fetch(N8N_WEBHOOK_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(N8N_API_KEY ? { 'X-Api-Key': N8N_API_KEY } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
 
-  for (const url of N8N_CANDIDATE_URLS) {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(N8N_API_KEY ? { 'X-Api-Key': N8N_API_KEY } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (res.ok) {
-      return { res, url };
-    }
-
-    lastStatus = res.status;
-    try {
-      lastBody = await res.text();
-    } catch {
-      lastBody = null;
-    }
-
-    // If the URL exists but fails for another reason (401/403/500), stop trying.
-    if (res.status !== 404) {
-      console.error(`[aggregate-external-jobs] n8n webhook failed ${res.status} at ${url}:`, lastBody);
-      break;
-    }
-  }
-
-  return { res: null as Response | null, url: null as string | null, lastStatus, lastBody };
+  return res;
 }
 
 const SEARCH_QUERIES = [
@@ -265,20 +219,14 @@ serve(async (req) => {
           requestBody.welderProfile = welderProfile;
         }
 
-        const { res: response, url: usedUrl, lastStatus, lastBody } = await postToN8n(requestBody);
+        const response = await postToN8n(requestBody);
 
-        if (!response) {
+        if (!response.ok) {
           console.error(
-            `[aggregate-external-jobs] n8n webhook failed (lastStatus=${lastStatus ?? 'unknown'}) triedUrls=${N8N_CANDIDATE_URLS.length}`,
+            `[aggregate-external-jobs] n8n webhook failed ${response.status}:`,
+            await response.text().catch(() => 'no body'),
           );
-          if (lastStatus === 404) {
-            console.error('[aggregate-external-jobs] Last 404 body:', lastBody);
-          }
           continue;
-        }
-
-        if (usedUrl) {
-          console.log('[aggregate-external-jobs] n8n webhook OK:', usedUrl);
         }
 
         const rawResult = await response.json();
