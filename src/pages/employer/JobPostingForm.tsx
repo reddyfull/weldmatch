@@ -210,7 +210,6 @@ export default function JobPostingForm() {
       description: `"${template.name}" template has been applied.`,
     });
   };
-  };
 
   const validateForm = (): boolean => {
     try {
