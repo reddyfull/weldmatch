@@ -57,29 +57,35 @@ export function useApplyToJob() {
     try {
       setApplying(true);
 
-      // 1. Get match score from n8n
-      const matchResult = await matchCandidates({
-        jobId,
-        welderId,
-        jobData: {
-          title: jobData.title,
-          requiredCerts: jobData.requiredCerts || [],
-          requiredProcesses: jobData.requiredProcesses || [],
-          requiredPositions: jobData.requiredPositions || [],
-          experienceMin: jobData.experienceMin || 0,
-          location: jobData.location || '',
-        },
-        welderData: {
-          name: welderData.name,
-          yearsExperience: welderData.yearsExperience || 0,
-          weldProcesses: welderData.weldProcesses || [],
-          weldPositions: welderData.weldPositions || [],
-          certifications: welderData.certifications || [],
-          location: welderData.location || '',
-        },
-      });
-
-      const matchScore = matchResult.matches?.[0]?.overallScore || 0;
+      // 1. Try to get match score from n8n (with fallback)
+      let matchScore = 0;
+      try {
+        const matchResult = await matchCandidates({
+          jobId,
+          welderId,
+          jobData: {
+            title: jobData.title,
+            requiredCerts: jobData.requiredCerts || [],
+            requiredProcesses: jobData.requiredProcesses || [],
+            requiredPositions: jobData.requiredPositions || [],
+            experienceMin: jobData.experienceMin || 0,
+            location: jobData.location || '',
+          },
+          welderData: {
+            name: welderData.name,
+            yearsExperience: welderData.yearsExperience || 0,
+            weldProcesses: welderData.weldProcesses || [],
+            weldPositions: welderData.weldPositions || [],
+            certifications: welderData.certifications || [],
+            location: welderData.location || '',
+          },
+        });
+        matchScore = matchResult?.matches?.[0]?.overallScore || 0;
+      } catch (matchError) {
+        // If n8n matching fails, continue with a default score
+        console.warn('Match scoring failed, using fallback score:', matchError);
+        matchScore = 50; // Default fallback score
+      }
 
       // 2. Create application in Supabase
       const { data: application, error: insertError } = await supabase
