@@ -449,6 +449,7 @@ export type Database = {
           pay_max: number | null
           pay_min: number | null
           pay_type: Database["public"]["Enums"]["pay_type"] | null
+          positions_needed: number
           required_certs: string[] | null
           required_positions: string[] | null
           required_processes: string[] | null
@@ -476,6 +477,7 @@ export type Database = {
           pay_max?: number | null
           pay_min?: number | null
           pay_type?: Database["public"]["Enums"]["pay_type"] | null
+          positions_needed?: number
           required_certs?: string[] | null
           required_positions?: string[] | null
           required_processes?: string[] | null
@@ -503,6 +505,7 @@ export type Database = {
           pay_max?: number | null
           pay_min?: number | null
           pay_type?: Database["public"]["Enums"]["pay_type"] | null
+          positions_needed?: number
           required_certs?: string[] | null
           required_positions?: string[] | null
           required_processes?: string[] | null
