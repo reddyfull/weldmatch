@@ -63,7 +63,9 @@ serve(async (req) => {
       '/optimize-profile',
       '/analyze-skills-gap',
       '/scan-job-matches',
-      '/career-advice'
+      '/career-advice',
+      // AI Job Description Generator
+      '/generate-job-description'
     ]
     
     if (!allowedEndpoints.includes(endpoint)) {
