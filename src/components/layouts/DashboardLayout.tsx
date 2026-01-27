@@ -122,6 +122,14 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
             <p className="text-xs text-muted-foreground capitalize">{userType}</p>
           </div>
         </div>
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 px-3 mt-2 text-muted-foreground hover:text-foreground"
+          onClick={handleSignOut}
+        >
+          <LogOut className="w-5 h-5" />
+          Sign Out
+        </Button>
       </div>
     </div>
   );
