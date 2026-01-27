@@ -115,7 +115,21 @@ serve(async (req) => {
       )
     }
 
-    const result = await n8nResponse.json()
+    // Handle empty or non-JSON responses gracefully
+    const responseText = await n8nResponse.text()
+    let result
+    
+    if (!responseText || responseText.trim() === '') {
+      console.warn('n8n returned empty response, using fallback')
+      result = { success: false, fallback: true, message: 'n8n returned empty response' }
+    } else {
+      try {
+        result = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('Failed to parse n8n response:', responseText.substring(0, 200))
+        result = { success: false, fallback: true, message: 'Invalid JSON from n8n', raw: responseText.substring(0, 500) }
+      }
+    }
     
     return new Response(
       JSON.stringify(result),
