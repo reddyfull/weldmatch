@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Flame, Mail, Lock, Building, Phone, MapPin, AlertCircle, Loader2, Globe } from "lucide-react";
+import { Flame, Mail, Lock, Building, Phone, MapPin, AlertCircle, Loader2, Globe, Chrome } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -45,15 +46,32 @@ export default function RegisterEmployer() {
   const [companySize, setCompanySize] = useState("");
   const [website, setWebsite] = useState("");
   
-  const { signUpWithEmail, user, loading } = useAuth();
+  const { signUpWithEmail, signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
       navigate("/dashboard");
     }
   }, [user, loading, navigate]);
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setIsGoogleLoading(true);
+    
+    // Store user type preference before OAuth redirect
+    sessionStorage.setItem('pendingUserType', 'employer');
+    
+    const { error } = await signInWithGoogle();
+    
+    if (error) {
+      setError(error.message);
+      setIsGoogleLoading(false);
+    }
+    // Note: Successful OAuth will redirect, so no need to handle success here
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +118,8 @@ export default function RegisterEmployer() {
       website,
     }));
 
+    setIsLoading(false);
+
     toast({
       title: "Account created!",
       description: "Welcome to WeldMatch. Your 14-day free trial has started.",
@@ -143,6 +163,29 @@ export default function RegisterEmployer() {
         </CardHeader>
 
         <CardContent>
+          {/* Google Sign In */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-12 mb-4"
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleLoading || isLoading}
+          >
+            {isGoogleLoading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Chrome className="w-5 h-5 mr-2" />
+            )}
+            Continue with Google
+          </Button>
+
+          <div className="relative my-4">
+            <Separator />
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+              or register with email
+            </span>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
