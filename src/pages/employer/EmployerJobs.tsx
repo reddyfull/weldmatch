@@ -60,6 +60,7 @@ interface Job {
   status: JobStatus;
   applications_count: number;
   views_count: number;
+  positions_needed: number;
   created_at: string;
   expires_at: string | null;
   required_processes: string[];
@@ -359,7 +360,7 @@ export default function EmployerJobs() {
                         <div className="flex items-center gap-6 text-sm">
                           <span className="flex items-center gap-1 text-muted-foreground">
                             <Users className="w-4 h-4" />
-                            <span className="font-medium text-foreground">{job.applications_count}</span> applicants
+                            <span className="font-medium text-foreground">{job.applications_count}</span> / {job.positions_needed} positions
                           </span>
                           <span className="flex items-center gap-1 text-muted-foreground">
                             <Eye className="w-4 h-4" />

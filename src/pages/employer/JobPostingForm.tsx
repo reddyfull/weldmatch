@@ -83,6 +83,7 @@ const jobSchema = z.object({
   pay_min: z.number().min(0).optional(),
   pay_max: z.number().min(0).optional(),
   experience_min: z.number().min(0).max(50).optional(),
+  positions_needed: z.number().min(1, "At least 1 position required").max(100, "Maximum 100 positions"),
   required_processes: z.array(z.string()),
   required_positions: z.array(z.string()),
   required_certs: z.array(z.string()),
@@ -113,6 +114,7 @@ export default function JobPostingForm() {
   const [payMax, setPayMax] = useState("");
   const [experienceMin, setExperienceMin] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [positionsNeeded, setPositionsNeeded] = useState("1");
   const [selectedProcesses, setSelectedProcesses] = useState<string[]>([]);
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   const [selectedCerts, setSelectedCerts] = useState<string[]>([]);
@@ -135,6 +137,7 @@ export default function JobPostingForm() {
         pay_min: payMin ? parseFloat(payMin) : undefined,
         pay_max: payMax ? parseFloat(payMax) : undefined,
         experience_min: experienceMin ? parseInt(experienceMin) : undefined,
+        positions_needed: positionsNeeded ? parseInt(positionsNeeded) : 1,
         required_processes: selectedProcesses,
         required_positions: selectedPositions,
         required_certs: selectedCerts,
@@ -185,6 +188,7 @@ export default function JobPostingForm() {
         pay_min: payMin ? parseFloat(payMin) : null,
         pay_max: payMax ? parseFloat(payMax) : null,
         experience_min: experienceMin ? parseInt(experienceMin) : 0,
+        positions_needed: positionsNeeded ? parseInt(positionsNeeded) : 1,
         required_processes: selectedProcesses,
         required_positions: selectedPositions,
         required_certs: selectedCerts,
@@ -294,7 +298,7 @@ export default function JobPostingForm() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Job Type *</Label>
                 <Select value={jobType} onValueChange={(v) => setJobType(v as typeof jobType)}>
@@ -309,6 +313,21 @@ export default function JobPostingForm() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="positionsNeeded">Positions Needed *</Label>
+                <Input
+                  id="positionsNeeded"
+                  type="number"
+                  min="1"
+                  max="100"
+                  placeholder="1"
+                  value={positionsNeeded}
+                  onChange={(e) => setPositionsNeeded(e.target.value)}
+                  className={errors.positions_needed ? "border-destructive" : ""}
+                />
+                {errors.positions_needed && <p className="text-sm text-destructive">{errors.positions_needed}</p>}
               </div>
 
               <div className="space-y-2">
