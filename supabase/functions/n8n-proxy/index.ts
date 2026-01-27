@@ -65,7 +65,13 @@ serve(async (req) => {
       '/scan-job-matches',
       '/career-advice',
       // AI Job Description Generator
-      '/generate-job-description'
+      '/generate-job-description',
+      // Advanced AI Features
+      '/analyze-weld-quality',
+      '/optimize-crew',
+      '/interview-coach',
+      '/safety-compliance',
+      '/career-path'
     ]
     
     if (!allowedEndpoints.includes(endpoint)) {

@@ -25,6 +25,9 @@ import WelderApplications from "./pages/welder/WelderApplications";
 import WelderJobs from "./pages/welder/WelderJobs";
 import JobDetail from "./pages/welder/JobDetail";
 import CareerCoach from "./pages/welder/CareerCoach";
+import WeldAnalyzer from "./pages/welder/WeldAnalyzer";
+import InterviewCoach from "./pages/welder/InterviewCoach";
+import CareerPathPredictor from "./pages/welder/CareerPathPredictor";
 
 // Employer Pages
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
@@ -34,6 +37,8 @@ import EmployerJobs from "./pages/employer/EmployerJobs";
 import EmployerCandidates from "./pages/employer/EmployerCandidates";
 import JobPostingForm from "./pages/employer/JobPostingForm";
 import EmployerSettings from "./pages/employer/EmployerSettings";
+import CrewOptimizer from "./pages/employer/CrewOptimizer";
+import SafetyMonitor from "./pages/employer/SafetyMonitor";
 
 // Admin Pages
 import AdminCertifications from "./pages/admin/AdminCertifications";
@@ -67,6 +72,9 @@ const App = () => (
             <Route path="/welder/jobs" element={<WelderJobs />} />
             <Route path="/welder/jobs/:jobId" element={<JobDetail />} />
             <Route path="/welder/career-coach" element={<CareerCoach />} />
+            <Route path="/welder/weld-analyzer" element={<WeldAnalyzer />} />
+            <Route path="/welder/interview-coach" element={<InterviewCoach />} />
+            <Route path="/welder/career-path" element={<CareerPathPredictor />} />
             
             {/* Employer Routes */}
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />
@@ -76,6 +84,8 @@ const App = () => (
             <Route path="/employer/candidates" element={<EmployerCandidates />} />
             <Route path="/employer/jobs/new" element={<JobPostingForm />} />
             <Route path="/employer/settings" element={<EmployerSettings />} />
+            <Route path="/employer/crew-optimizer" element={<CrewOptimizer />} />
+            <Route path="/employer/safety-monitor" element={<SafetyMonitor />} />
             
             {/* Admin Routes */}
             <Route path="/admin/certifications" element={<AdminCertifications />} />

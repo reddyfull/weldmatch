@@ -25,6 +25,10 @@ import {
   PlusCircle,
   Search,
   Sparkles,
+  Microscope,
+  Mic,
+  Rocket,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -44,6 +48,9 @@ const welderNavItems: NavItem[] = [
   { label: "Dashboard", href: "/welder/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
   { label: "My Profile", href: "/welder/profile/edit", icon: <User className="w-5 h-5" /> },
   { label: "Career Coach", href: "/welder/career-coach", icon: <Sparkles className="w-5 h-5" /> },
+  { label: "Weld Analyzer", href: "/welder/weld-analyzer", icon: <Microscope className="w-5 h-5" /> },
+  { label: "Interview Coach", href: "/welder/interview-coach", icon: <Mic className="w-5 h-5" /> },
+  { label: "Career Path", href: "/welder/career-path", icon: <Rocket className="w-5 h-5" /> },
   { label: "Job Search", href: "/welder/jobs", icon: <Search className="w-5 h-5" /> },
   { label: "Applications", href: "/welder/applications", icon: <FileText className="w-5 h-5" /> },
   { label: "Documents", href: "/welder/documents", icon: <Settings className="w-5 h-5" /> },
@@ -54,6 +61,8 @@ const employerNavItems: NavItem[] = [
   { label: "My Jobs", href: "/employer/jobs", icon: <Briefcase className="w-5 h-5" /> },
   { label: "Post New Job", href: "/employer/jobs/new", icon: <PlusCircle className="w-5 h-5" /> },
   { label: "Candidates", href: "/employer/candidates", icon: <Users className="w-5 h-5" /> },
+  { label: "Crew Optimizer", href: "/employer/crew-optimizer", icon: <Users className="w-5 h-5" /> },
+  { label: "Safety Monitor", href: "/employer/safety-monitor", icon: <Shield className="w-5 h-5" /> },
   { label: "Company Settings", href: "/employer/settings", icon: <Building className="w-5 h-5" /> },
 ];
 
