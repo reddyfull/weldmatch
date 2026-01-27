@@ -28,12 +28,15 @@ import {
   Loader2, 
   AlertCircle,
   Calendar,
-  Gift
+  Gift,
+  Sparkles
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmployerProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 import { WELD_PROCESSES, WELD_POSITIONS } from "@/constants/welderOptions";
+import { generateJobDescription, GeneratedJobDescription } from "@/lib/n8n";
+import { AIJobDescriptionModal } from "@/components/employer/AIJobDescriptionModal";
 
 const CERT_OPTIONS = [
   { id: "AWS D1.1", label: "AWS D1.1 - Structural Steel" },
@@ -102,6 +105,12 @@ export default function JobPostingForm() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
+  // AI Generation state
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [generatedDescription, setGeneratedDescription] = useState<GeneratedJobDescription | null>(null);
+  
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -122,6 +131,68 @@ export default function JobPostingForm() {
 
   const toggleArrayItem = (arr: string[], setArr: React.Dispatch<React.SetStateAction<string[]>>, item: string) => {
     setArr(prev => prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]);
+  };
+
+  // AI Job Description Generation
+  const handleGenerateWithAI = async () => {
+    if (!title.trim()) {
+      toast({
+        title: "Job Title Required",
+        description: "Please enter a job title before generating a description.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowAIModal(true);
+    setAiGenerating(true);
+    setAiError(null);
+    setGeneratedDescription(null);
+
+    try {
+      const jobTypeLabel = JOB_TYPES.find(t => t.value === jobType)?.label || "Full Time";
+      const location = city && state ? `${city}, ${state}` : city || state || undefined;
+
+      const response = await generateJobDescription({
+        jobTitle: title,
+        location,
+        companyName: employerProfile?.company_name,
+        salaryMin: payMin ? parseFloat(payMin) : undefined,
+        salaryMax: payMax ? parseFloat(payMax) : undefined,
+        salaryPeriod: payType === "hourly" ? "hourly" : payType === "salary" ? "yearly" : undefined,
+        weldingProcesses: selectedProcesses.map(p => {
+          const process = WELD_PROCESSES.find(wp => wp.id === p);
+          return process?.label || p;
+        }),
+        certifications: selectedCerts,
+        yearsExperience: experienceMin ? parseInt(experienceMin) : undefined,
+        employmentType: jobTypeLabel,
+        benefits: selectedBenefits,
+        tone: "professional",
+      });
+
+      if (response.success && response.generated) {
+        setGeneratedDescription(response.generated);
+      } else {
+        throw new Error(response.error || "Failed to generate description");
+      }
+    } catch (error) {
+      console.error("AI generation error:", error);
+      setAiError(error instanceof Error ? error.message : "Failed to generate job description");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const handleUseGeneratedDescription = () => {
+    if (generatedDescription) {
+      setDescription(generatedDescription.fullDescription);
+      setShowAIModal(false);
+      toast({
+        title: "Description Applied",
+        description: "AI-generated description has been added to your job posting.",
+      });
+    }
   };
 
   const validateForm = (): boolean => {
@@ -288,10 +359,22 @@ export default function JobPostingForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Job Description</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="description">Job Description</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateWithAI}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 hover:from-purple-600 hover:to-pink-600"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate with AI
+                </Button>
+              </div>
               <Textarea
                 id="description"
-                placeholder="Describe the role, responsibilities, and project details..."
+                placeholder="Describe the role, responsibilities, and project details... or use AI to generate"
                 className="min-h-[150px]"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -604,6 +687,16 @@ export default function JobPostingForm() {
           </Button>
         </div>
       </div>
+
+      {/* AI Job Description Modal */}
+      <AIJobDescriptionModal
+        open={showAIModal}
+        onOpenChange={setShowAIModal}
+        generated={generatedDescription}
+        isLoading={aiGenerating}
+        error={aiError}
+        onUseDescription={handleUseGeneratedDescription}
+      />
     </DashboardLayout>
   );
 }

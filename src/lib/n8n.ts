@@ -189,6 +189,52 @@ export interface EmailResponse {
   error?: string;
 }
 
+// Job Description Generator Types
+export interface JobDescriptionRequest {
+  jobTitle: string;
+  location?: string;
+  companyName?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  salaryPeriod?: 'hourly' | 'yearly';
+  weldingProcesses?: string[];
+  certifications?: string[];
+  yearsExperience?: number;
+  employmentType?: string;
+  shiftType?: string;
+  benefits?: string[];
+  perks?: string[];
+  companyDescription?: string;
+  tone?: 'professional' | 'casual' | 'urgent';
+  includeEmoji?: boolean;
+}
+
+export interface GeneratedJobDescription {
+  title: string;
+  headline: string;
+  companyIntro: string;
+  responsibilities: string[];
+  requirements: string[];
+  compensation: string;
+  benefits: string[];
+  callToAction: string;
+  fullDescription: string;
+  seoKeywords: string[];
+}
+
+export interface JobDescriptionResponse {
+  success: boolean;
+  generated: GeneratedJobDescription;
+  input: {
+    jobTitle: string;
+    location: string;
+    companyName: string;
+    employmentType: string;
+  };
+  generatedAt: string;
+  error?: string;
+}
+
 // ============================================================================
 // HELPER FUNCTION
 // ============================================================================
@@ -261,6 +307,17 @@ export async function sendEmail(
 ): Promise<EmailResponse> {
   console.log('Sending email:', request.templateId, 'to:', request.to);
   return callN8n<EmailResponse, EmailRequest>('/send-email', request);
+}
+
+/**
+ * Generate an AI-powered job description
+ * Uses n8n workflow to create SEO-optimized job postings
+ */
+export async function generateJobDescription(
+  request: JobDescriptionRequest
+): Promise<JobDescriptionResponse> {
+  console.log('Generating job description for:', request.jobTitle);
+  return callN8n<JobDescriptionResponse, JobDescriptionRequest>('/generate-job-description', request);
 }
 
 // ============================================================================
