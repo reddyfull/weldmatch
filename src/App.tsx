@@ -33,6 +33,7 @@ import EmployerProfileEdit from "./pages/employer/EmployerProfileEdit";
 import EmployerJobs from "./pages/employer/EmployerJobs";
 import EmployerCandidates from "./pages/employer/EmployerCandidates";
 import JobPostingForm from "./pages/employer/JobPostingForm";
+import EmployerSettings from "./pages/employer/EmployerSettings";
 
 // Admin Pages
 import AdminCertifications from "./pages/admin/AdminCertifications";
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="/employer/jobs" element={<EmployerJobs />} />
             <Route path="/employer/candidates" element={<EmployerCandidates />} />
             <Route path="/employer/jobs/new" element={<JobPostingForm />} />
+            <Route path="/employer/settings" element={<EmployerSettings />} />
             
             {/* Admin Routes */}
             <Route path="/admin/certifications" element={<AdminCertifications />} />
