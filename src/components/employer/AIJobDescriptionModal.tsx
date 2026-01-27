@@ -10,9 +10,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, Sparkles, AlertCircle } from "lucide-react";
+import { Loader2, Check, Sparkles, AlertCircle, Save } from "lucide-react";
 import { GeneratedJobDescription } from "@/lib/n8n";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SaveTemplateDialog } from "./SaveTemplateDialog";
 
 interface AIJobDescriptionModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface AIJobDescriptionModalProps {
   isLoading: boolean;
   error: string | null;
   onUseDescription: () => void;
+  jobTitle?: string;
 }
 
 export function AIJobDescriptionModal({
@@ -30,7 +32,9 @@ export function AIJobDescriptionModal({
   isLoading,
   error,
   onUseDescription,
+  jobTitle,
 }: AIJobDescriptionModalProps) {
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -188,15 +192,38 @@ export function AIJobDescriptionModal({
         </ScrollArea>
 
         <DialogFooter className="pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={onUseDescription} variant="hero">
-            <Check className="w-4 h-4 mr-2" />
-            Use This Description
-          </Button>
+          <div className="flex w-full justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setShowSaveTemplate(true)}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save as Template
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={onUseDescription} variant="hero">
+                <Check className="w-4 h-4 mr-2" />
+                Use This Description
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
+
+      {/* Save Template Dialog */}
+      <SaveTemplateDialog
+        open={showSaveTemplate}
+        onOpenChange={setShowSaveTemplate}
+        description={generated?.fullDescription || ""}
+        jobTitle={jobTitle}
+        metadata={{
+          headline: generated?.headline,
+          seoKeywords: generated?.seoKeywords,
+        }}
+      />
     </Dialog>
   );
 }

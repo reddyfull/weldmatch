@@ -37,6 +37,8 @@ import { useToast } from "@/hooks/use-toast";
 import { WELD_PROCESSES, WELD_POSITIONS } from "@/constants/welderOptions";
 import { generateJobDescription, GeneratedJobDescription } from "@/lib/n8n";
 import { AIJobDescriptionModal } from "@/components/employer/AIJobDescriptionModal";
+import { LoadTemplateDialog } from "@/components/employer/LoadTemplateDialog";
+import { JobTemplate } from "@/hooks/useJobTemplates";
 
 const CERT_OPTIONS = [
   { id: "AWS D1.1", label: "AWS D1.1 - Structural Steel" },
@@ -110,6 +112,9 @@ export default function JobPostingForm() {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [generatedDescription, setGeneratedDescription] = useState<GeneratedJobDescription | null>(null);
+  
+  // Template state
+  const [showLoadTemplate, setShowLoadTemplate] = useState(false);
   
   // Form state
   const [title, setTitle] = useState("");
@@ -193,6 +198,18 @@ export default function JobPostingForm() {
         description: "AI-generated description has been added to your job posting.",
       });
     }
+  };
+
+  const handleLoadTemplate = (template: JobTemplate) => {
+    setDescription(template.description);
+    if (template.job_title && !title) {
+      setTitle(template.job_title);
+    }
+    toast({
+      title: "Template Loaded",
+      description: `"${template.name}" template has been applied.`,
+    });
+  };
   };
 
   const validateForm = (): boolean => {
@@ -359,18 +376,28 @@ export default function JobPostingForm() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <Label htmlFor="description">Job Description</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateWithAI}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 hover:from-purple-600 hover:to-pink-600"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate with AI
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowLoadTemplate(true)}
+                  >
+                    Load Template
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateWithAI}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 hover:from-purple-600 hover:to-pink-600"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate with AI
+                  </Button>
+                </div>
               </div>
               <Textarea
                 id="description"
@@ -696,6 +723,14 @@ export default function JobPostingForm() {
         isLoading={aiGenerating}
         error={aiError}
         onUseDescription={handleUseGeneratedDescription}
+        jobTitle={title}
+      />
+
+      {/* Load Template Dialog */}
+      <LoadTemplateDialog
+        open={showLoadTemplate}
+        onOpenChange={setShowLoadTemplate}
+        onSelectTemplate={handleLoadTemplate}
       />
     </DashboardLayout>
   );
