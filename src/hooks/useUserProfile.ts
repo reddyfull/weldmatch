@@ -170,7 +170,7 @@ export function useUpdateWelderProfile() {
       return profile;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["welder_profile"] });
+      queryClient.invalidateQueries({ queryKey: ["welder_profile", user?.id] });
     },
   });
 }
@@ -249,7 +249,7 @@ export function useUpdateProfile() {
       return profile;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
     },
   });
 }
