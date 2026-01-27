@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +70,7 @@ export default function WelderApplications() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: welderProfile, isLoading: welderLoading } = useWelderProfile();
+  const queryClient = useQueryClient();
 
   const { data: applications, isLoading: applicationsLoading } = useQuery({
     queryKey: ["welder_applications", welderProfile?.id],
@@ -121,6 +122,33 @@ export default function WelderApplications() {
       navigate("/welder/profile/setup");
     }
   }, [welderProfile, welderLoading, user, navigate]);
+
+  // Real-time subscription for application status updates
+  useEffect(() => {
+    if (!welderProfile?.id) return;
+
+    const channel = supabase
+      .channel('welder-applications-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'applications',
+          filter: `welder_id=eq.${welderProfile.id}`,
+        },
+        (payload) => {
+          console.log('Application update received:', payload);
+          // Invalidate the query to refetch fresh data
+          queryClient.invalidateQueries({ queryKey: ["welder_applications", welderProfile.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [welderProfile?.id, queryClient]);
 
   const isLoading = authLoading || welderLoading || applicationsLoading;
 
