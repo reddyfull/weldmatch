@@ -432,6 +432,47 @@ export type Database = {
         }
         Relationships: []
       }
+      job_templates: {
+        Row: {
+          created_at: string
+          description: string
+          employer_id: string
+          id: string
+          job_title: string | null
+          metadata: Json | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          employer_id: string
+          id?: string
+          job_title?: string | null
+          metadata?: Json | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          employer_id?: string
+          id?: string
+          job_title?: string | null
+          metadata?: Json | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_templates_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           applications_count: number | null
