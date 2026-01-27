@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEmployerProfile, useUserProfile } from "@/hooks/useUserProfile";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function EmployerDashboard() {
   const navigate = useNavigate();
@@ -45,6 +47,70 @@ export default function EmployerDashboard() {
       navigate("/employer/profile/setup");
     }
   }, [employerProfile, employerLoading, user, navigate, hasInitialLoad]);
+
+  // Fetch real-time stats
+  const { data: stats } = useQuery({
+    queryKey: ["employer_stats", employerProfile?.id],
+    queryFn: async () => {
+      if (!employerProfile?.id) return { activeJobs: 0, applications: 0, interviews: 0, hires: 0 };
+
+      // Fetch active jobs count
+      const { count: activeJobsCount } = await supabase
+        .from("jobs")
+        .select("*", { count: "exact", head: true })
+        .eq("employer_id", employerProfile.id)
+        .eq("status", "active");
+
+      // Fetch all applications for this employer's jobs
+      const { data: jobIds } = await supabase
+        .from("jobs")
+        .select("id")
+        .eq("employer_id", employerProfile.id);
+
+      const jobIdList = jobIds?.map(j => j.id) || [];
+
+      let applicationsCount = 0;
+      let interviewsCount = 0;
+      let hiresCount = 0;
+
+      if (jobIdList.length > 0) {
+        const { count: totalApps } = await supabase
+          .from("applications")
+          .select("*", { count: "exact", head: true })
+          .in("job_id", jobIdList);
+
+        const { count: interviews } = await supabase
+          .from("applications")
+          .select("*", { count: "exact", head: true })
+          .in("job_id", jobIdList)
+          .eq("status", "interview");
+
+        // Hires this month
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const { count: hires } = await supabase
+          .from("applications")
+          .select("*", { count: "exact", head: true })
+          .in("job_id", jobIdList)
+          .eq("status", "hired")
+          .gte("updated_at", startOfMonth.toISOString());
+
+        applicationsCount = totalApps || 0;
+        interviewsCount = interviews || 0;
+        hiresCount = hires || 0;
+      }
+
+      return {
+        activeJobs: activeJobsCount || 0,
+        applications: applicationsCount,
+        interviews: interviewsCount,
+        hires: hiresCount,
+      };
+    },
+    enabled: !!employerProfile?.id,
+  });
 
   const isLoading = authLoading || profileLoading || employerLoading;
 
@@ -136,7 +202,7 @@ export default function EmployerDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Active Jobs</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{stats?.activeJobs ?? 0}</p>
                   <p className="text-xs text-muted-foreground">Posted</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -151,7 +217,7 @@ export default function EmployerDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Applications</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{stats?.applications ?? 0}</p>
                   <p className="text-xs text-muted-foreground">Total received</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
@@ -166,7 +232,7 @@ export default function EmployerDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Interviews</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{stats?.interviews ?? 0}</p>
                   <p className="text-xs text-muted-foreground">Scheduled</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
@@ -181,7 +247,7 @@ export default function EmployerDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Hires</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{stats?.hires ?? 0}</p>
                   <p className="text-xs text-muted-foreground">This month</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
