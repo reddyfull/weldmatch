@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -219,6 +219,40 @@ export default function EmployerCandidates() {
     },
     enabled: !!employerProfile?.id,
   });
+
+  // Real-time subscription for new applications
+  useEffect(() => {
+    if (!employerProfile?.id || !employerJobs?.length) return;
+
+    const jobIds = employerJobs.map(j => j.id);
+
+    const channel = supabase
+      .channel('employer-applications-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'applications',
+        },
+        (payload) => {
+          // Check if this application is for one of the employer's jobs
+          const newRecord = payload.new as { job_id?: string } | undefined;
+          const oldRecord = payload.old as { job_id?: string } | undefined;
+          const jobId = newRecord?.job_id || oldRecord?.job_id;
+          
+          if (jobId && jobIds.includes(jobId)) {
+            console.log('Application update received for employer:', payload);
+            queryClient.invalidateQueries({ queryKey: ["employer_applications", employerProfile.id] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [employerProfile?.id, employerJobs, queryClient]);
 
   // Update application status mutation
   const updateStatusMutation = useMutation({
