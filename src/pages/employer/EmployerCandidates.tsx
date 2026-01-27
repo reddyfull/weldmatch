@@ -244,6 +244,15 @@ export default function EmployerCandidates() {
           if (jobId && jobIds.includes(jobId)) {
             console.log('Application update received for employer:', payload);
             queryClient.invalidateQueries({ queryKey: ["employer_applications", employerProfile.id] });
+            
+            // Show toast for new applications
+            if (payload.eventType === 'INSERT') {
+              const jobTitle = employerJobs.find(j => j.id === jobId)?.title || 'your job';
+              toast({
+                title: "🎉 New Application!",
+                description: `Someone just applied to ${jobTitle}. Check it out!`,
+              });
+            }
           }
         }
       )
@@ -252,7 +261,7 @@ export default function EmployerCandidates() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [employerProfile?.id, employerJobs, queryClient]);
+  }, [employerProfile?.id, employerJobs, queryClient, toast]);
 
   // Update application status mutation
   const updateStatusMutation = useMutation({
