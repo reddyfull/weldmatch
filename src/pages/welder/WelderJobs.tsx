@@ -393,14 +393,20 @@ export default function WelderJobs() {
 
         {/* Tabs for WeldMatch Jobs vs External Jobs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="weldmatch" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-2 max-w-lg h-12">
+            <TabsTrigger value="weldmatch" className="flex items-center gap-2 text-sm">
               <Building className="h-4 w-4" />
               WeldMatch Jobs
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {filteredJobs.length}
+              </Badge>
             </TabsTrigger>
-            <TabsTrigger value="external" className="flex items-center gap-2">
+            <TabsTrigger value="external" className="flex items-center gap-2 text-sm">
               <Globe className="h-4 w-4" />
               External Jobs
+              <Badge className="ml-1 text-xs bg-primary/20 text-primary">
+                100+
+              </Badge>
             </TabsTrigger>
           </TabsList>
 
