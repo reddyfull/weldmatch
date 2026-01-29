@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -10,12 +10,22 @@ interface UserProfile {
   avatar_url: string | null;
 }
 
+export interface SubscriptionState {
+  subscribed: boolean;
+  plan: string | null;
+  subscriptionEnd: string | null;
+  customerId: string | null;
+  isLoading: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  subscription: SubscriptionState;
+  checkSubscription: () => Promise<void>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, fullName: string, userType: 'welder' | 'employer') => Promise<{ error: Error | null }>;
@@ -31,6 +41,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionState>({
+    subscribed: false,
+    plan: "free_trial",
+    subscriptionEnd: null,
+    customerId: null,
+    isLoading: false,
+  });
+
+  // Check subscription status
+  const checkSubscription = useCallback(async () => {
+    if (!user) {
+      setSubscription({
+        subscribed: false,
+        plan: "free_trial",
+        subscriptionEnd: null,
+        customerId: null,
+        isLoading: false,
+      });
+      return;
+    }
+
+    // Only check for employers
+    if (profile?.user_type !== "employer") {
+      return;
+    }
+
+    setSubscription(prev => ({ ...prev, isLoading: true }));
+
+    try {
+      const { data, error } = await supabase.functions.invoke("check-subscription");
+
+      if (error) {
+        console.error("Error checking subscription:", error);
+        setSubscription(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      setSubscription({
+        subscribed: data.subscribed || false,
+        plan: data.plan || "free_trial",
+        subscriptionEnd: data.subscription_end || null,
+        customerId: data.customer_id || null,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error("Error checking subscription:", error);
+      setSubscription(prev => ({ ...prev, isLoading: false }));
+    }
+  }, [user, profile?.user_type]);
 
   // Check if user has admin role
   const checkAdminRole = async (userId: string) => {
@@ -216,6 +275,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Check subscription when profile changes to employer
+  useEffect(() => {
+    if (profile?.user_type === "employer" && user) {
+      checkSubscription();
+    }
+  }, [profile?.user_type, user, checkSubscription]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -224,6 +290,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         loading,
         isAdmin,
+        subscription,
+        checkSubscription,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
