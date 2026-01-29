@@ -394,6 +394,15 @@ export default function WelderProfileEdit() {
           </CardContent>
         </Card>
 
+        {/* Sensitive Data Section */}
+        <SensitiveDataSection
+          welderId={welderProfile.id}
+          welderProfile={welderProfile as Record<string, any>}
+          onUpdate={() => {
+            queryClient.invalidateQueries({ queryKey: ["welder_profile", user?.id] });
+          }}
+        />
+
         {/* Preferences Section */}
         <Card>
           <CardHeader>
