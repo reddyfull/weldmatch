@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import RegisterWelder from "./pages/RegisterWelder";
 import RegisterEmployer from "./pages/RegisterEmployer";
+import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 
 // Post-Login Flow
@@ -56,6 +57,7 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/register/welder" element={<RegisterWelder />} />
             <Route path="/register/employer" element={<RegisterEmployer />} />
             
