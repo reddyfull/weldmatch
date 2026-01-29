@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -40,6 +41,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { useCandidateViewLimits } from "@/hooks/useCandidateViewLimits";
+import { getPlanDisplayName } from "@/lib/stripe";
 import {
   Users,
   Briefcase,
@@ -56,6 +59,10 @@ import {
   Award,
   Mail,
   Phone,
+  Lock,
+  Crown,
+  Zap,
+  EyeOff,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -103,7 +110,7 @@ const STATUS_CONFIG: Record<ApplicationStatus, { label: string; variant: "defaul
 };
 
 export default function EmployerCandidates() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, subscription } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -115,6 +122,19 @@ export default function EmployerCandidates() {
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [employerNotes, setEmployerNotes] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+
+  // Candidate view limits
+  const {
+    viewedCandidatesCount,
+    maxCandidateViews,
+    canViewMore,
+    remainingViews,
+    isUnlimited,
+    hasViewedWelder,
+    canViewWelder,
+    recordView,
+  } = useCandidateViewLimits();
 
   // Fetch employer profile
   const { data: employerProfile } = useQuery({
@@ -361,6 +381,25 @@ export default function EmployerCandidates() {
     });
   };
 
+  // Handle viewing a candidate with limit checking
+  const handleViewCandidate = (application: Application) => {
+    const welderId = application.welder_id;
+    
+    // Check if can view this candidate
+    if (!canViewWelder(welderId)) {
+      setShowUpgradeDialog(true);
+      return;
+    }
+    
+    // Record the view if not already viewed
+    if (!hasViewedWelder(welderId)) {
+      recordView({ welderId, applicationId: application.id });
+    }
+    
+    setSelectedApplication(application);
+    setEmployerNotes(application.employer_notes || "");
+  };
+
   const getMatchScoreColor = (score: number | null) => {
     if (!score) return "text-muted-foreground";
     if (score >= 80) return "text-green-600";
@@ -490,6 +529,51 @@ export default function EmployerCandidates() {
           </Card>
         </div>
 
+        {/* Candidate View Limit Banner */}
+        {!isUnlimited && (
+          <Card className={`${!canViewMore ? "border-amber-500/50 bg-amber-500/10" : "border-muted"}`}>
+            <CardContent className="py-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-full ${!canViewMore ? "bg-amber-500/20" : "bg-primary/10"}`}>
+                    <Eye className={`w-5 h-5 ${!canViewMore ? "text-amber-600" : "text-primary"}`} />
+                  </div>
+                  <div>
+                    <h3 className={`font-semibold ${!canViewMore ? "text-amber-700 dark:text-amber-400" : ""}`}>
+                      {canViewMore ? "Candidate Profile Views" : "View Limit Reached"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {canViewMore 
+                        ? `${viewedCandidatesCount} of ${maxCandidateViews} profiles viewed on ${getPlanDisplayName(subscription.plan)} plan`
+                        : `You've viewed all ${maxCandidateViews} candidate profiles allowed on your ${getPlanDisplayName(subscription.plan)} plan`
+                      }
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 sm:w-32">
+                    <Progress 
+                      value={(viewedCandidatesCount / maxCandidateViews) * 100} 
+                      className="h-2"
+                    />
+                  </div>
+                  <span className="text-sm font-medium whitespace-nowrap">
+                    {viewedCandidatesCount}/{maxCandidateViews}
+                  </span>
+                  {!canViewMore && (
+                    <Button size="sm" variant="outline" className="border-amber-500 text-amber-600 hover:bg-amber-500/10" asChild>
+                      <Link to="/pricing">
+                        <Zap className="w-4 h-4 mr-1" />
+                        Upgrade
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Filters */}
         <Card>
           <CardContent className="p-4">
@@ -569,24 +653,38 @@ export default function EmployerCandidates() {
                   </TableHeader>
                   <TableBody>
                     {filteredApplications.map((application) => (
-                      <TableRow key={application.id}>
+                      <TableRow key={application.id} className={!canViewWelder(application.welder_id) ? "opacity-60" : ""}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              {application.profile.avatar_url ? (
-                                <img
-                                  src={application.profile.avatar_url}
-                                  alt=""
-                                  className="h-10 w-10 rounded-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-sm font-medium text-primary">
-                                  {application.profile.full_name?.charAt(0) || "?"}
-                                </span>
+                            <div className="relative">
+                              <div className={`h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center ${!canViewWelder(application.welder_id) ? "blur-sm" : ""}`}>
+                                {application.profile.avatar_url ? (
+                                  <img
+                                    src={application.profile.avatar_url}
+                                    alt=""
+                                    className="h-10 w-10 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-sm font-medium text-primary">
+                                    {application.profile.full_name?.charAt(0) || "?"}
+                                  </span>
+                                )}
+                              </div>
+                              {hasViewedWelder(application.welder_id) && (
+                                <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-green-500 flex items-center justify-center">
+                                  <Eye className="h-2.5 w-2.5 text-white" />
+                                </div>
+                              )}
+                              {!canViewWelder(application.welder_id) && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <Lock className="h-4 w-4 text-amber-500" />
+                                </div>
                               )}
                             </div>
                             <div>
-                              <p className="font-medium">{application.profile.full_name || "Unknown"}</p>
+                              <p className={`font-medium ${!canViewWelder(application.welder_id) ? "blur-sm select-none" : ""}`}>
+                                {!canViewWelder(application.welder_id) ? "Locked Profile" : (application.profile.full_name || "Unknown")}
+                              </p>
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <MapPin className="h-3 w-3" />
                                 {application.welder_profile.city && application.welder_profile.state
@@ -636,13 +734,20 @@ export default function EmployerCandidates() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedApplication(application);
-                                  setEmployerNotes(application.employer_notes || "");
-                                }}
+                                onClick={() => handleViewCandidate(application)}
                               >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
+                                {hasViewedWelder(application.welder_id) ? (
+                                  <Eye className="h-4 w-4 mr-2" />
+                                ) : canViewWelder(application.welder_id) ? (
+                                  <Eye className="h-4 w-4 mr-2" />
+                                ) : (
+                                  <Lock className="h-4 w-4 mr-2 text-amber-500" />
+                                )}
+                                {hasViewedWelder(application.welder_id) 
+                                  ? "View Details" 
+                                  : canViewWelder(application.welder_id) 
+                                    ? "View Details (uses 1 view)" 
+                                    : "View Details (Upgrade)"}
                               </DropdownMenuItem>
                               {application.profile.phone && (
                                 <DropdownMenuItem asChild>
@@ -868,6 +973,65 @@ export default function EmployerCandidates() {
                 disabled={updateStatusMutation.isPending}
               >
                 Reject Application
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Upgrade Dialog for View Limits */}
+        <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-amber-500" />
+                Candidate View Limit Reached
+              </DialogTitle>
+              <DialogDescription>
+                You've viewed all {maxCandidateViews} candidate profiles allowed on your {getPlanDisplayName(subscription.plan)} plan.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                <div>
+                  <p className="text-sm text-muted-foreground">Profiles Viewed</p>
+                  <p className="text-2xl font-bold">{viewedCandidatesCount} / {maxCandidateViews}</p>
+                </div>
+                <Progress value={100} className="w-20 h-2" />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Upgrade to unlock:</p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    Unlimited candidate profile views
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    Unlimited job postings
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    Advanced matching algorithm
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    Priority support
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
+                Maybe Later
+              </Button>
+              <Button variant="hero" asChild>
+                <Link to="/pricing">
+                  <Crown className="w-4 h-4 mr-2" />
+                  View Plans
+                </Link>
               </Button>
             </DialogFooter>
           </DialogContent>
