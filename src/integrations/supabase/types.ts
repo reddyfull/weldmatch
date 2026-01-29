@@ -68,6 +68,52 @@ export type Database = {
           },
         ]
       }
+      candidate_profile_views: {
+        Row: {
+          application_id: string | null
+          employer_id: string
+          id: string
+          viewed_at: string
+          welder_id: string
+        }
+        Insert: {
+          application_id?: string | null
+          employer_id: string
+          id?: string
+          viewed_at?: string
+          welder_id: string
+        }
+        Update: {
+          application_id?: string | null
+          employer_id?: string
+          id?: string
+          viewed_at?: string
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_profile_views_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_profile_views_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_profile_views_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: false
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       career_coach_results: {
         Row: {
           certifications_snapshot: string[] | null
