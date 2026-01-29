@@ -24,6 +24,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  adminChecked: boolean;
   subscription: SubscriptionState;
   checkSubscription: () => Promise<void>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminChecked, setAdminChecked] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionState>({
     subscribed: false,
     plan: "free_trial",
@@ -100,13 +102,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Error checking admin role:', error);
         setIsAdmin(false);
-        return;
+      } else {
+        setIsAdmin(data === true);
       }
-      
-      setIsAdmin(data === true);
     } catch (error) {
       console.error('Error checking admin role:', error);
       setIsAdmin(false);
+    } finally {
+      setAdminChecked(true);
     }
   };
 
@@ -151,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setIsAdmin(false);
+          setAdminChecked(true);
         }
         
         setLoading(false);
@@ -290,6 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         loading,
         isAdmin,
+        adminChecked,
         subscription,
         checkSubscription,
         signInWithGoogle,
