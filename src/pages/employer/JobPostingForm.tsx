@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -29,16 +30,22 @@ import {
   AlertCircle,
   Calendar,
   Gift,
-  Sparkles
+  Sparkles,
+  Lock,
+  Crown,
+  Zap
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmployerProfile } from "@/hooks/useUserProfile";
+import { useJobLimits } from "@/hooks/useJobLimits";
 import { useToast } from "@/hooks/use-toast";
 import { WELD_PROCESSES, WELD_POSITIONS } from "@/constants/welderOptions";
 import { generateJobDescription, GeneratedJobDescription } from "@/lib/n8n";
 import { AIJobDescriptionModal } from "@/components/employer/AIJobDescriptionModal";
 import { LoadTemplateDialog } from "@/components/employer/LoadTemplateDialog";
 import { JobTemplate } from "@/hooks/useJobTemplates";
+import { getPlanDisplayName } from "@/lib/stripe";
+import { useAuth } from "@/contexts/AuthContext";
 
 const CERT_OPTIONS = [
   { id: "AWS D1.1", label: "AWS D1.1 - Structural Steel" },
@@ -102,7 +109,18 @@ export default function JobPostingForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { subscription } = useAuth();
   const { data: employerProfile, isLoading: profileLoading } = useEmployerProfile();
+  
+  // Job limits check
+  const { 
+    activeJobsCount, 
+    maxActiveJobs, 
+    canPostJob, 
+    remainingJobPosts, 
+    isUnlimited,
+    isLoading: limitsLoading 
+  } = useJobLimits();
   
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -338,6 +356,71 @@ export default function JobPostingForm() {
     );
   }
 
+  // Check if user has reached job posting limit
+  if (!limitsLoading && !canPostJob) {
+    return (
+      <DashboardLayout userType="employer">
+        <div className="max-w-4xl mx-auto p-6 space-y-6">
+          {/* Header */}
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/employer/jobs")}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Post a New Job</h1>
+              <p className="text-muted-foreground">Find qualified welders for your project</p>
+            </div>
+          </div>
+
+          {/* Job Limit Reached Card */}
+          <Card className="border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-orange-500/5">
+            <CardContent className="py-12">
+              <div className="text-center space-y-6">
+                <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <Lock className="w-8 h-8 text-amber-600" />
+                </div>
+                
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-foreground">Job Posting Limit Reached</h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    You've reached the maximum of {maxActiveJobs} active job{maxActiveJobs > 1 ? 's' : ''} on your 
+                    <Badge variant="secondary" className="mx-1">{getPlanDisplayName(subscription.plan)}</Badge>
+                    plan.
+                  </p>
+                </div>
+
+                <div className="max-w-xs mx-auto space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Active Jobs</span>
+                    <span className="font-medium">{activeJobsCount} / {maxActiveJobs}</span>
+                  </div>
+                  <Progress value={100} className="h-2" />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button variant="outline" onClick={() => navigate("/employer/jobs")}>
+                    Manage Existing Jobs
+                  </Button>
+                  <Button variant="hero" asChild>
+                    <Link to="/pricing">
+                      <Crown className="w-4 h-4 mr-2" />
+                      Upgrade for Unlimited Jobs
+                    </Link>
+                  </Button>
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  <Zap className="w-4 h-4 inline mr-1 text-amber-500" />
+                  Professional and Enterprise plans include unlimited job postings
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout userType="employer">
       <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -346,10 +429,15 @@ export default function JobPostingForm() {
           <Button variant="ghost" size="icon" onClick={() => navigate("/employer/dashboard")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-foreground">Post a New Job</h1>
             <p className="text-muted-foreground">Find qualified welders for your project</p>
           </div>
+          {!isUnlimited && (
+            <Badge variant="outline" className="hidden sm:flex">
+              {remainingJobPosts === 0 ? "No posts remaining" : `${remainingJobPosts} post${remainingJobPosts === 1 ? '' : 's'} remaining`}
+            </Badge>
+          )}
         </div>
 
         {/* Job Details */}
