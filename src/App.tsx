@@ -47,6 +47,9 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminAuditLog from "./pages/admin/AdminAuditLog";
 
+// Demo Pages
+import EncryptionDemo from "./pages/demo/EncryptionDemo";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -98,6 +101,9 @@ const App = () => (
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/audit-log" element={<AdminAuditLog />} />
             <Route path="/admin/dashboard" element={<AdminCertifications />} />
+            
+            {/* Demo Routes */}
+            <Route path="/demo/encryption" element={<EncryptionDemo />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
