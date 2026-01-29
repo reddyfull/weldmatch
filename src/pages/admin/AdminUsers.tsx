@@ -43,6 +43,7 @@ interface UserWithRoles {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
+  email: string | null;
   user_type: UserType;
   created_at: string | null;
   roles: AppRole[];
@@ -90,9 +91,24 @@ export default function AdminUsers() {
 
       if (rolesError) throw rolesError;
 
-      // Combine profiles with their roles
+      // Fetch user emails using the admin function
+      const { data: emailsData, error: emailsError } = await supabase
+        .rpc("get_users_with_email");
+
+      if (emailsError) {
+        console.error("Failed to fetch emails:", emailsError);
+      }
+
+      // Create email lookup map
+      const emailMap = new Map<string, string>();
+      (emailsData || []).forEach((e: { user_id: string; email: string }) => {
+        emailMap.set(e.user_id, e.email);
+      });
+
+      // Combine profiles with their roles and emails
       const usersWithRoles: UserWithRoles[] = (profiles || []).map((profile) => ({
         ...profile,
+        email: emailMap.get(profile.id) || null,
         roles: (allRoles || [])
           .filter((r) => r.user_id === profile.id)
           .map((r) => r.role),
@@ -158,6 +174,7 @@ export default function AdminUsers() {
     const searchLower = searchQuery.toLowerCase();
     return (
       user.full_name?.toLowerCase().includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower) ||
       user.id.toLowerCase().includes(searchLower) ||
       user.user_type.toLowerCase().includes(searchLower)
     );
@@ -233,7 +250,7 @@ export default function AdminUsers() {
                         </Avatar>
                         <div>
                           <p className="font-medium">{user.full_name || "Unnamed User"}</p>
-                          <p className="text-xs text-muted-foreground font-mono">{user.id.slice(0, 8)}...</p>
+                          <p className="text-xs text-muted-foreground">{user.email || "No email"}</p>
                         </div>
                       </div>
                     </TableCell>
