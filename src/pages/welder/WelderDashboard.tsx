@@ -17,6 +17,7 @@ import {
   Clock,
   MapPin,
   DollarSign,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWelderProfile, useUserProfile } from "@/hooks/useUserProfile";
@@ -86,6 +87,34 @@ export default function WelderDashboard() {
             Here's what's happening with your job search
           </p>
         </div>
+
+        {/* External Jobs Promotion Banner */}
+        <Card className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border-primary/20">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Globe className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground">100+ External Jobs Available!</h3>
+                    <Badge className="bg-accent text-accent-foreground text-xs">New</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Browse welding jobs from Indeed, LinkedIn & more — all in one place
+                  </p>
+                </div>
+              </div>
+              <Button variant="hero" asChild className="shrink-0">
+                <Link to="/welder/jobs?tab=external">
+                  Browse External Jobs
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Stats Row */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
