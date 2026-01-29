@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -106,9 +106,13 @@ export default function WelderJobs() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const { apply, applying } = useApplyToJob();
+  const [searchParams] = useSearchParams();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState('weldmatch');
+  const [activeTab, setActiveTab] = useState(() => {
+    const stored = localStorage.getItem('welder_jobs_active_tab');
+    return stored === 'external' || stored === 'weldmatch' ? stored : 'weldmatch';
+  });
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [welderProfile, setWelderProfile] = useState<WelderProfile | null>(null);
@@ -134,6 +138,14 @@ export default function WelderJobs() {
       fetchData();
     }
   }, [user]);
+
+  // Allow deep-linking directly to a tab, e.g. /welder/jobs?tab=external
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'external' || tab === 'weldmatch') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const fetchData = async () => {
     try {
@@ -392,7 +404,14 @@ export default function WelderJobs() {
         </div>
 
         {/* Tabs for WeldMatch Jobs vs External Jobs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v);
+            localStorage.setItem('welder_jobs_active_tab', v);
+          }}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2 max-w-lg h-12">
             <TabsTrigger value="weldmatch" className="flex items-center gap-2 text-sm">
               <Building className="h-4 w-4" />
