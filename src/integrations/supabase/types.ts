@@ -160,6 +160,7 @@ export type Database = {
           ai_extracted_data: Json | null
           cert_name: string | null
           cert_number: string | null
+          cert_number_encrypted: string | null
           cert_type: string
           created_at: string | null
           document_url: string | null
@@ -167,6 +168,7 @@ export type Database = {
           id: string
           issue_date: string | null
           issuing_body: string | null
+          license_number_encrypted: string | null
           verification_status:
             | Database["public"]["Enums"]["verification_status"]
             | null
@@ -178,6 +180,7 @@ export type Database = {
           ai_extracted_data?: Json | null
           cert_name?: string | null
           cert_number?: string | null
+          cert_number_encrypted?: string | null
           cert_type: string
           created_at?: string | null
           document_url?: string | null
@@ -185,6 +188,7 @@ export type Database = {
           id?: string
           issue_date?: string | null
           issuing_body?: string | null
+          license_number_encrypted?: string | null
           verification_status?:
             | Database["public"]["Enums"]["verification_status"]
             | null
@@ -196,6 +200,7 @@ export type Database = {
           ai_extracted_data?: Json | null
           cert_name?: string | null
           cert_number?: string | null
+          cert_number_encrypted?: string | null
           cert_type?: string
           created_at?: string | null
           document_url?: string | null
@@ -203,6 +208,7 @@ export type Database = {
           id?: string
           issue_date?: string | null
           issuing_body?: string | null
+          license_number_encrypted?: string | null
           verification_status?:
             | Database["public"]["Enums"]["verification_status"]
             | null
@@ -230,6 +236,9 @@ export type Database = {
       employer_profiles: {
         Row: {
           address_line1: string | null
+          bank_account_encrypted: string | null
+          bank_routing_encrypted: string | null
+          billing_address_encrypted: string | null
           city: string | null
           company_name: string
           company_size: Database["public"]["Enums"]["company_size"] | null
@@ -237,6 +246,7 @@ export type Database = {
           description: string | null
           id: string
           industry: string | null
+          insurance_policy_encrypted: string | null
           lat: number | null
           lng: number | null
           logo_url: string | null
@@ -249,6 +259,7 @@ export type Database = {
           subscription_status:
             | Database["public"]["Enums"]["subscription_status"]
             | null
+          tax_id_encrypted: string | null
           trial_ends_at: string | null
           updated_at: string | null
           user_id: string
@@ -257,6 +268,9 @@ export type Database = {
         }
         Insert: {
           address_line1?: string | null
+          bank_account_encrypted?: string | null
+          bank_routing_encrypted?: string | null
+          billing_address_encrypted?: string | null
           city?: string | null
           company_name: string
           company_size?: Database["public"]["Enums"]["company_size"] | null
@@ -264,6 +278,7 @@ export type Database = {
           description?: string | null
           id?: string
           industry?: string | null
+          insurance_policy_encrypted?: string | null
           lat?: number | null
           lng?: number | null
           logo_url?: string | null
@@ -276,6 +291,7 @@ export type Database = {
           subscription_status?:
             | Database["public"]["Enums"]["subscription_status"]
             | null
+          tax_id_encrypted?: string | null
           trial_ends_at?: string | null
           updated_at?: string | null
           user_id: string
@@ -284,6 +300,9 @@ export type Database = {
         }
         Update: {
           address_line1?: string | null
+          bank_account_encrypted?: string | null
+          bank_routing_encrypted?: string | null
+          billing_address_encrypted?: string | null
           city?: string | null
           company_name?: string
           company_size?: Database["public"]["Enums"]["company_size"] | null
@@ -291,6 +310,7 @@ export type Database = {
           description?: string | null
           id?: string
           industry?: string | null
+          insurance_policy_encrypted?: string | null
           lat?: number | null
           lng?: number | null
           logo_url?: string | null
@@ -303,6 +323,7 @@ export type Database = {
           subscription_status?:
             | Database["public"]["Enums"]["subscription_status"]
             | null
+          tax_id_encrypted?: string | null
           trial_ends_at?: string | null
           updated_at?: string | null
           user_id?: string
@@ -682,6 +703,45 @@ export type Database = {
         }
         Relationships: []
       }
+      sensitive_data_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          field_name: string
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          record_id: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          field_name: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          field_name?: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -774,18 +834,31 @@ export type Database = {
       }
       welder_profiles: {
         Row: {
+          background_check_encrypted: string | null
+          bank_account_encrypted: string | null
+          bank_routing_encrypted: string | null
           bio: string | null
           city: string | null
           created_at: string | null
           desired_salary_max: number | null
           desired_salary_min: number | null
+          dob_encrypted: string | null
+          drivers_license_encrypted: string | null
+          drug_test_encrypted: string | null
+          emergency_phone_encrypted: string | null
+          home_address_encrypted: string | null
           id: string
           is_available: boolean | null
           lat: number | null
           lng: number | null
+          medical_info_encrypted: string | null
+          passport_number_encrypted: string | null
+          phone_personal_encrypted: string | null
           profile_completion: number | null
           salary_type: Database["public"]["Enums"]["salary_type"] | null
+          ssn_encrypted: string | null
           state: string | null
+          tax_id_encrypted: string | null
           updated_at: string | null
           user_id: string
           weld_positions: string[] | null
@@ -795,18 +868,31 @@ export type Database = {
           zip_code: string | null
         }
         Insert: {
+          background_check_encrypted?: string | null
+          bank_account_encrypted?: string | null
+          bank_routing_encrypted?: string | null
           bio?: string | null
           city?: string | null
           created_at?: string | null
           desired_salary_max?: number | null
           desired_salary_min?: number | null
+          dob_encrypted?: string | null
+          drivers_license_encrypted?: string | null
+          drug_test_encrypted?: string | null
+          emergency_phone_encrypted?: string | null
+          home_address_encrypted?: string | null
           id?: string
           is_available?: boolean | null
           lat?: number | null
           lng?: number | null
+          medical_info_encrypted?: string | null
+          passport_number_encrypted?: string | null
+          phone_personal_encrypted?: string | null
           profile_completion?: number | null
           salary_type?: Database["public"]["Enums"]["salary_type"] | null
+          ssn_encrypted?: string | null
           state?: string | null
+          tax_id_encrypted?: string | null
           updated_at?: string | null
           user_id: string
           weld_positions?: string[] | null
@@ -816,18 +902,31 @@ export type Database = {
           zip_code?: string | null
         }
         Update: {
+          background_check_encrypted?: string | null
+          bank_account_encrypted?: string | null
+          bank_routing_encrypted?: string | null
           bio?: string | null
           city?: string | null
           created_at?: string | null
           desired_salary_max?: number | null
           desired_salary_min?: number | null
+          dob_encrypted?: string | null
+          drivers_license_encrypted?: string | null
+          drug_test_encrypted?: string | null
+          emergency_phone_encrypted?: string | null
+          home_address_encrypted?: string | null
           id?: string
           is_available?: boolean | null
           lat?: number | null
           lng?: number | null
+          medical_info_encrypted?: string | null
+          passport_number_encrypted?: string | null
+          phone_personal_encrypted?: string | null
           profile_completion?: number | null
           salary_type?: Database["public"]["Enums"]["salary_type"] | null
+          ssn_encrypted?: string | null
           state?: string | null
+          tax_id_encrypted?: string | null
           updated_at?: string | null
           user_id?: string
           weld_positions?: string[] | null
@@ -890,6 +989,28 @@ export type Database = {
         Args: { _welder_id: string }
         Returns: number
       }
+      get_audit_log: {
+        Args: {
+          p_action?: string
+          p_end_date?: string
+          p_limit?: number
+          p_record_id?: string
+          p_start_date?: string
+          p_table_name?: string
+          p_user_id?: string
+        }
+        Returns: {
+          action: string
+          created_at: string
+          field_name: string
+          id: string
+          metadata: Json
+          record_id: string
+          table_name: string
+          user_agent: string
+          user_id: string
+        }[]
+      }
       get_user_type: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_type"]
@@ -907,6 +1028,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_sensitive_access: {
+        Args: {
+          p_action: string
+          p_field_name: string
+          p_metadata?: Json
+          p_record_id?: string
+          p_table_name: string
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
