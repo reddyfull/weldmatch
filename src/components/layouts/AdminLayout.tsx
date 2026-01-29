@@ -21,6 +21,7 @@ import {
   Menu,
   ShieldCheck,
   CreditCard,
+  FileSearch,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ const adminNavItems: NavItem[] = [
   { label: "Certifications", href: "/admin/certifications", icon: <Award className="w-5 h-5" /> },
   { label: "Payments", href: "/admin/payments", icon: <CreditCard className="w-5 h-5" /> },
   { label: "Users", href: "/admin/users", icon: <Users className="w-5 h-5" /> },
+  { label: "Audit Log", href: "/admin/audit-log", icon: <FileSearch className="w-5 h-5" /> },
   { label: "Settings", href: "/admin/settings", icon: <Settings className="w-5 h-5" /> },
 ];
 

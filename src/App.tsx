@@ -45,6 +45,7 @@ import SafetyMonitor from "./pages/employer/SafetyMonitor";
 import AdminCertifications from "./pages/admin/AdminCertifications";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPayments from "./pages/admin/AdminPayments";
+import AdminAuditLog from "./pages/admin/AdminAuditLog";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,7 @@ const App = () => (
             <Route path="/admin/certifications" element={<AdminCertifications />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/audit-log" element={<AdminAuditLog />} />
             <Route path="/admin/dashboard" element={<AdminCertifications />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
