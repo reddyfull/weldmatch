@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 export default function PostLoginRouter() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, isAdmin, adminChecked } = useAuth();
   const { data: welderProfile, isLoading: welderLoading } = useWelderProfile();
   const { data: employerProfile, isLoading: employerLoading } = useEmployerProfile();
   const [hasChecked, setHasChecked] = useState(false);
@@ -17,7 +17,8 @@ export default function PostLoginRouter() {
 
   useEffect(() => {
     const handleRouting = async () => {
-      if (authLoading || welderLoading || employerLoading || isUpdatingRole) return;
+      // Wait for auth and admin check to complete
+      if (authLoading || !adminChecked || isUpdatingRole) return;
 
       if (!user) {
         navigate("/login");
@@ -25,6 +26,16 @@ export default function PostLoginRouter() {
       }
 
       if (hasChecked) return;
+
+      // PRIORITY: Admin users go directly to admin dashboard
+      if (isAdmin) {
+        setHasChecked(true);
+        navigate("/admin/dashboard");
+        return;
+      }
+
+      // Wait for profile data for non-admin users
+      if (welderLoading || employerLoading) return;
 
       // Check for pending user type from OAuth registration flow
       const pendingUserType = sessionStorage.getItem('pendingUserType') as 'welder' | 'employer' | null;
@@ -79,7 +90,7 @@ export default function PostLoginRouter() {
     };
 
     handleRouting();
-  }, [user, profile, welderProfile, employerProfile, authLoading, welderLoading, employerLoading, hasChecked, isUpdatingRole, navigate, queryClient]);
+  }, [user, profile, welderProfile, employerProfile, authLoading, welderLoading, employerLoading, hasChecked, isUpdatingRole, isAdmin, adminChecked, navigate, queryClient]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary/95 to-primary-dark flex items-center justify-center">
