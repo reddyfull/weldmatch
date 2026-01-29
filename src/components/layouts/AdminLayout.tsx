@@ -20,6 +20,7 @@ import {
   LogOut,
   Menu,
   ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ interface AdminLayoutProps {
 const adminNavItems: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
   { label: "Certifications", href: "/admin/certifications", icon: <Award className="w-5 h-5" /> },
+  { label: "Payments", href: "/admin/payments", icon: <CreditCard className="w-5 h-5" /> },
   { label: "Users", href: "/admin/users", icon: <Users className="w-5 h-5" /> },
   { label: "Settings", href: "/admin/settings", icon: <Settings className="w-5 h-5" /> },
 ];
