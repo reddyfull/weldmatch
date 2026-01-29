@@ -106,13 +106,13 @@ export const SensitiveDataSection: React.FC<SensitiveDataSectionProps> = ({
     
     // Log the access
     if (user?.id) {
-      await logSensitiveAccess({
-        userId: user.id,
-        action: 'view',
-        tableName: 'welder_profiles',
+      await logSensitiveAccess(
+        user.id,
+        'view',
         fieldName,
-        recordId: welderId,
-      });
+        'welder_profiles',
+        welderId
+      );
     }
     
     return true;
@@ -124,13 +124,13 @@ export const SensitiveDataSection: React.FC<SensitiveDataSectionProps> = ({
       
       // Log the access
       if (user?.id) {
-        await logSensitiveAccess({
-          userId: user.id,
-          action: 'view_verified',
-          tableName: 'welder_profiles',
-          fieldName: pendingRevealField,
-          recordId: welderId,
-        });
+        await logSensitiveAccess(
+          user.id,
+          'reveal',
+          pendingRevealField,
+          'welder_profiles',
+          welderId
+        );
       }
       
       // Auto-hide after 30 seconds for sensitive fields
@@ -191,13 +191,13 @@ export const SensitiveDataSection: React.FC<SensitiveDataSectionProps> = ({
       if (error) throw error;
       
       // Log the update
-      await logSensitiveAccess({
-        userId: user.id,
-        action: 'update',
-        tableName: 'welder_profiles',
-        fieldName: 'multiple_encrypted_fields',
-        recordId: welderId,
-      });
+      await logSensitiveAccess(
+        user.id,
+        'edit',
+        'multiple_encrypted_fields',
+        'welder_profiles',
+        welderId
+      );
       
       toast({
         title: 'Sensitive Data Saved',
