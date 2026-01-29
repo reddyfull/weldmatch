@@ -20,6 +20,7 @@ import { WELD_PROCESSES, WELD_POSITIONS } from "@/constants/welderOptions";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { CertificationUpload } from "@/components/CertificationUpload";
 import { CertificationsList } from "@/components/CertificationsList";
+import { SensitiveDataSection } from "@/components/welder/SensitiveDataSection";
 
 export default function WelderProfileEdit() {
   const navigate = useNavigate();
@@ -392,6 +393,15 @@ export default function WelderProfileEdit() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Sensitive Data Section */}
+        <SensitiveDataSection
+          welderId={welderProfile.id}
+          welderProfile={welderProfile as Record<string, any>}
+          onUpdate={() => {
+            queryClient.invalidateQueries({ queryKey: ["welder_profile", user?.id] });
+          }}
+        />
 
         {/* Preferences Section */}
         <Card>
