@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,12 +39,17 @@ import {
   Edit,
   DollarSign,
   Calendar,
+  Lock,
+  Zap,
+  Crown,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEmployerProfile } from "@/hooks/useUserProfile";
+import { useJobLimits } from "@/hooks/useJobLimits";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow, format } from "date-fns";
+import { getPlanDisplayName } from "@/lib/stripe";
 
 type JobStatus = "draft" | "active" | "paused" | "filled" | "expired";
 type JobType = "full_time" | "part_time" | "contract" | "per_diem";
@@ -85,11 +91,21 @@ const JOB_TYPE_LABELS: Record<JobType, string> = {
 export default function EmployerJobs() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, subscription } = useAuth();
   const { data: employerProfile, isLoading: employerLoading } = useEmployerProfile();
   const { toast } = useToast();
   const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<JobStatus | "all">("all");
+  
+  // Job limits
+  const { 
+    activeJobsCount, 
+    maxActiveJobs, 
+    canPostJob, 
+    remainingJobPosts, 
+    isUnlimited,
+    isLoading: limitsLoading 
+  } = useJobLimits();
 
   const { data: jobs, isLoading: jobsLoading } = useQuery({
     queryKey: ["employer_jobs", employerProfile?.id],
@@ -206,13 +222,67 @@ export default function EmployerJobs() {
               Manage your job postings and view applicants
             </p>
           </div>
-          <Button variant="hero" asChild>
-            <Link to="/employer/jobs/new">
-              <Plus className="w-4 h-4 mr-2" />
-              Post New Job
-            </Link>
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* Job Limit Badge */}
+            {!isUnlimited && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full">
+                <span className="text-sm text-muted-foreground">
+                  {activeJobsCount}/{maxActiveJobs} active jobs
+                </span>
+              </div>
+            )}
+            
+            {canPostJob ? (
+              <Button variant="hero" asChild>
+                <Link to="/employer/jobs/new">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Post New Job
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="hero" asChild>
+                <Link to="/pricing">
+                  <Crown className="w-4 h-4 mr-2" />
+                  Upgrade to Post More
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Job Limit Warning Banner */}
+        {!isUnlimited && !canPostJob && (
+          <Card className="border-amber-500/50 bg-amber-500/10">
+            <CardContent className="py-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-amber-500/20">
+                  <Lock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-amber-700 dark:text-amber-400">
+                    Job Posting Limit Reached
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    You've reached the maximum of {maxActiveJobs} active job{maxActiveJobs > 1 ? 's' : ''} on the {getPlanDisplayName(subscription.plan)} plan. 
+                    Upgrade to Professional for unlimited job postings.
+                  </p>
+                  <div className="flex items-center gap-3 mt-3">
+                    <Progress 
+                      value={100} 
+                      className="flex-1 h-2 max-w-xs"
+                    />
+                    <Button size="sm" variant="outline" className="border-amber-500 text-amber-600 hover:bg-amber-500/10" asChild>
+                      <Link to="/pricing">
+                        <Zap className="w-4 h-4 mr-1" />
+                        Upgrade Now
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Status Summary */}
         <div className="grid gap-4 md:grid-cols-4">
