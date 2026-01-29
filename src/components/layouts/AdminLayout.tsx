@@ -103,7 +103,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       </nav>
 
       {/* User Section */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-3">
         <div className="flex items-center gap-3 px-3 py-2">
           <Avatar className="w-10 h-10">
             <AvatarImage src={avatarUrl || undefined} />
@@ -116,6 +116,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <p className="text-xs text-muted-foreground">Administrator</p>
           </div>
         </div>
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          onClick={handleSignOut}
+        >
+          <LogOut className="w-5 h-5" />
+          Sign Out
+        </Button>
       </div>
     </div>
   );
