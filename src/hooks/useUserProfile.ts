@@ -69,10 +69,10 @@ export function useUserProfile() {
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      return data as Profile;
+      return (data as Profile | null) ?? null;
     },
     enabled: !!user?.id,
   });
@@ -225,7 +225,7 @@ export function useUpdateEmployerProfile() {
       return profile;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["employer_profile"] });
+      queryClient.invalidateQueries({ queryKey: ["employer_profile", user?.id] });
     },
   });
 }
