@@ -43,6 +43,7 @@ import SafetyMonitor from "./pages/employer/SafetyMonitor";
 
 // Admin Pages
 import AdminCertifications from "./pages/admin/AdminCertifications";
+import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPayments from "./pages/admin/AdminPayments";
 
 const queryClient = new QueryClient();
@@ -93,6 +94,7 @@ const App = () => (
             {/* Admin Routes */}
             <Route path="/admin/certifications" element={<AdminCertifications />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/dashboard" element={<AdminCertifications />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
