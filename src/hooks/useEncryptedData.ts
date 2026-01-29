@@ -70,20 +70,18 @@ export function useEncryptedData<T extends Record<string, any>>(
   }, [tableName, showMasked, revealedFields]);
 
   /**
-   * Reveal a specific field (may require verification)
+   * Reveal a specific field (returns config info for verification handling)
    */
-  const revealField = useCallback(async (fieldName: string): Promise<boolean> => {
+  const revealField = useCallback((fieldName: string) => {
+    setRevealedFields(prev => new Set([...prev, fieldName]));
+  }, []);
+
+  /**
+   * Complete reveal with auto-hide for sensitive fields
+   */
+  const completeReveal = useCallback((fieldName: string) => {
     const config = getFieldConfig(tableName, fieldName);
     
-    if (config?.requiresVerification) {
-      // TODO: Implement re-authentication modal
-      // For now, just reveal after confirmation
-      const confirmed = window.confirm(
-        `Viewing ${config.displayName} requires verification. Continue?`
-      );
-      if (!confirmed) return false;
-    }
-
     setRevealedFields(prev => new Set([...prev, fieldName]));
 
     // Auto-hide after 30 seconds for sensitive fields
@@ -92,8 +90,6 @@ export function useEncryptedData<T extends Record<string, any>>(
         hideField(fieldName);
       }, 30000);
     }
-
-    return true;
   }, [tableName]);
 
   /**
@@ -141,6 +137,7 @@ export function useEncryptedData<T extends Record<string, any>>(
     processData,
     getDisplayValue,
     revealField,
+    completeReveal,
     hideField,
     hideAllFields,
     prepareForSave,
