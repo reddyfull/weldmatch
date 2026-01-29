@@ -2,14 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Flame } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWelderProfile, useEmployerProfile } from "@/hooks/useUserProfile";
+import { useEmployerProfile, useUserProfile, useWelderProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function PostLoginRouter() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, profile, loading: authLoading, isAdmin, adminChecked } = useAuth();
+  const { user, loading: authLoading, isAdmin, adminChecked } = useAuth();
+  const { data: userProfile, isLoading: profileLoading } = useUserProfile();
   const { data: welderProfile, isLoading: welderLoading } = useWelderProfile();
   const { data: employerProfile, isLoading: employerLoading } = useEmployerProfile();
   const [hasChecked, setHasChecked] = useState(false);
@@ -34,14 +35,14 @@ export default function PostLoginRouter() {
         return;
       }
 
-      // Wait for profile data for non-admin users
-      if (welderLoading || employerLoading) return;
+      // Wait for all profile data for non-admin users
+      if (profileLoading || welderLoading || employerLoading) return;
 
       // Check for pending user type from OAuth registration flow
       const pendingUserType = sessionStorage.getItem('pendingUserType') as 'welder' | 'employer' | null;
       
       // If there's a pending user type AND the profile user_type doesn't match, update it
-      if (pendingUserType && profile?.user_type !== pendingUserType) {
+      if (pendingUserType && userProfile?.user_type !== pendingUserType) {
         setIsUpdatingRole(true);
         sessionStorage.removeItem('pendingUserType');
         
@@ -55,7 +56,7 @@ export default function PostLoginRouter() {
             console.error('Error updating user type:', error);
           } else {
             // Invalidate profile queries to refresh the data
-            await queryClient.invalidateQueries({ queryKey: ['profile'] });
+            await queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
             
             // Navigate based on the pending user type
             if (pendingUserType === 'welder') {
@@ -77,7 +78,7 @@ export default function PostLoginRouter() {
 
       setHasChecked(true);
 
-      const userType = profile?.user_type;
+      const userType = userProfile?.user_type;
 
       if (userType === "welder") {
         navigate(welderProfile ? "/welder/dashboard" : "/welder/profile/setup");
@@ -90,7 +91,7 @@ export default function PostLoginRouter() {
     };
 
     handleRouting();
-  }, [user, profile, welderProfile, employerProfile, authLoading, welderLoading, employerLoading, hasChecked, isUpdatingRole, isAdmin, adminChecked, navigate, queryClient]);
+  }, [user, userProfile, profileLoading, welderProfile, employerProfile, authLoading, welderLoading, employerLoading, hasChecked, isUpdatingRole, isAdmin, adminChecked, navigate, queryClient]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary/95 to-primary-dark flex items-center justify-center">
