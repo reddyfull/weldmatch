@@ -635,6 +635,44 @@ export type Database = {
           },
         ]
       }
+      market_intelligence_results: {
+        Row: {
+          created_at: string
+          id: string
+          profile_snapshot: Json | null
+          request_context: Json | null
+          result_data: Json
+          updated_at: string
+          welder_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_snapshot?: Json | null
+          request_context?: Json | null
+          result_data: Json
+          updated_at?: string
+          welder_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_snapshot?: Json | null
+          request_context?: Json | null
+          result_data?: Json
+          updated_at?: string
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_intelligence_results_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: true
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_strength_results: {
         Row: {
           certifications_snapshot: string[] | null

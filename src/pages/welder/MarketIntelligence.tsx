@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,8 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  Flame
+  Flame,
+  Database
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWelderProfile } from "@/hooks/useUserProfile";
@@ -30,6 +31,8 @@ import { getMarketIntelligence, MarketIntelligenceResponse } from "@/lib/ai-phas
 import { toast } from "@/hooks/use-toast";
 import { WeldingLoadingAnimation } from "@/components/ai/WeldingLoadingAnimation";
 import { WELD_PROCESSES_FULL, CERTIFICATIONS_LIST, INDUSTRY_PREFERENCES } from "@/constants/aiFeatureOptions";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
@@ -118,7 +121,10 @@ export default function MarketIntelligence() {
   const { user } = useAuth();
   const { data: welderProfile } = useWelderProfile();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCached, setIsLoadingCached] = useState(true);
   const [intelligence, setIntelligence] = useState<MarketIntelligenceResponse | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [isCached, setIsCached] = useState(false);
 
   const [filters, setFilters] = useState({
     state: welderProfile?.state || "",
@@ -130,6 +136,53 @@ export default function MarketIntelligence() {
     currentSalary: undefined as number | undefined,
     yearsExperience: welderProfile?.years_experience || 0,
   });
+
+  // Load cached data from database on mount
+  useEffect(() => {
+    const loadCachedData = async () => {
+      if (!welderProfile?.id) {
+        setIsLoadingCached(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('market_intelligence_results')
+          .select('*')
+          .eq('welder_id', welderProfile.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data?.result_data) {
+          setIntelligence(data.result_data as unknown as MarketIntelligenceResponse);
+          setLastUpdated(data.updated_at);
+          setIsCached(true);
+          
+          // Restore filters from request_context if available
+          if (data.request_context) {
+            const ctx = data.request_context as any;
+            setFilters(prev => ({
+              ...prev,
+              state: ctx.state || prev.state,
+              city: ctx.city || prev.city,
+              industries: ctx.industries || prev.industries,
+              processes: ctx.processes || prev.processes,
+              certifications: ctx.certifications || prev.certifications,
+              experienceLevel: ctx.experienceLevel || prev.experienceLevel,
+              currentSalary: ctx.currentSalary || prev.currentSalary,
+            }));
+          }
+        }
+      } catch (error) {
+        console.error("Error loading cached market intelligence:", error);
+      } finally {
+        setIsLoadingCached(false);
+      }
+    };
+
+    loadCachedData();
+  }, [welderProfile?.id]);
 
   const updateFilter = (field: string, value: any) => {
     setFilters(prev => ({ ...prev, [field]: value }));
@@ -143,7 +196,46 @@ export default function MarketIntelligence() {
     updateFilter(field, updated);
   };
 
-  const fetchIntelligence = async () => {
+  const saveToDatabase = async (response: MarketIntelligenceResponse) => {
+    if (!welderProfile?.id) return;
+
+    const requestContext = {
+      state: filters.state,
+      city: filters.city,
+      industries: filters.industries,
+      processes: filters.processes,
+      certifications: filters.certifications,
+      experienceLevel: filters.experienceLevel,
+      currentSalary: filters.currentSalary,
+    };
+
+    try {
+      const { error } = await supabase
+        .from('market_intelligence_results')
+        .upsert([{
+          welder_id: welderProfile.id,
+          result_data: JSON.parse(JSON.stringify(response)),
+          request_context: JSON.parse(JSON.stringify(requestContext)),
+          profile_snapshot: JSON.parse(JSON.stringify({
+            state: welderProfile.state,
+            city: welderProfile.city,
+            processes: welderProfile.weld_processes,
+            years_experience: welderProfile.years_experience,
+          })),
+          updated_at: new Date().toISOString(),
+        }], {
+          onConflict: 'welder_id',
+        });
+
+      if (error) throw error;
+      setLastUpdated(new Date().toISOString());
+      setIsCached(true);
+    } catch (error) {
+      console.error("Error saving market intelligence:", error);
+    }
+  };
+
+  const fetchIntelligence = async (forceRefresh = false) => {
     setIsLoading(true);
     try {
       const response = await getMarketIntelligence({
@@ -163,9 +255,10 @@ export default function MarketIntelligence() {
 
       if (response.success) {
         setIntelligence(response);
+        await saveToDatabase(response);
         toast({
-          title: "Market Data Updated",
-          description: "Fresh intelligence loaded.",
+          title: forceRefresh ? "Market Data Refreshed" : "Market Data Loaded",
+          description: "Fresh intelligence from the market.",
         });
       } else {
         throw new Error("Failed to fetch intelligence");
@@ -182,11 +275,11 @@ export default function MarketIntelligence() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingCached) {
     return (
       <DashboardLayout userType="welder">
         <div className="flex items-center justify-center min-h-[60vh]">
-          <WeldingLoadingAnimation message="Analyzing market data..." />
+          <WeldingLoadingAnimation message={isLoadingCached ? "Loading cached data..." : "Analyzing market data..."} />
         </div>
       </DashboardLayout>
     );
@@ -196,7 +289,7 @@ export default function MarketIntelligence() {
     <DashboardLayout userType="welder">
       <div className="p-4 lg:p-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center shadow-lg">
               <BarChart3 className="w-6 h-6 text-white" />
@@ -206,10 +299,18 @@ export default function MarketIntelligence() {
               <p className="text-sm text-muted-foreground">Salary benchmarks, demand analysis & career insights</p>
             </div>
           </div>
-          <Button onClick={fetchIntelligence} disabled={isLoading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            {intelligence ? 'Refresh Data' : 'Load Intelligence'}
-          </Button>
+          <div className="flex items-center gap-3">
+            {isCached && lastUpdated && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Database className="w-3.5 h-3.5" />
+                <span>Updated {formatDistanceToNow(new Date(lastUpdated), { addSuffix: true })}</span>
+              </div>
+            )}
+            <Button onClick={() => fetchIntelligence(true)} disabled={isLoading}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              {intelligence ? 'Refresh Data' : 'Load Intelligence'}
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -307,7 +408,7 @@ export default function MarketIntelligence() {
               <p className="text-muted-foreground mb-4">
                 Click "Load Intelligence" to fetch current market data based on your filters.
               </p>
-              <Button onClick={fetchIntelligence}>
+              <Button onClick={() => fetchIntelligence(false)}>
                 <Sparkles className="w-4 h-4 mr-2" />
                 Load Market Intelligence
               </Button>
