@@ -2,7 +2,7 @@
 // WeldMatch Phase 2 AI Features - n8n Integration
 // All features connect to n8n workflows via direct webhook calls
 
-const API_BASE = 'https://reddyfull.app.n8n.cloud/webhook';
+import { supabase } from "@/integrations/supabase/client";
 
 // ============================================================================
 // TYPES - Chat Assistant
@@ -448,25 +448,24 @@ export interface EmployerProfile {
 // ============================================================================
 
 /**
- * Generic fetch wrapper with error handling
+ * Generic wrapper to call n8n endpoints via the n8n-proxy edge function
+ * This avoids CORS issues by routing through Supabase
  */
 async function callAIEndpoint<T>(endpoint: string, data: object): Promise<T> {
   try {
-    const response = await fetch(`${API_BASE}/${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
+    const { data: result, error } = await supabase.functions.invoke('n8n-proxy', {
+      body: {
+        endpoint: `/${endpoint}`,
+        payload: data
+      }
     });
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`AI endpoint ${endpoint} error:`, response.status, errorText);
-      throw new Error(`API Error: ${response.status} - ${errorText}`);
+    if (error) {
+      console.error(`AI endpoint ${endpoint} error:`, error);
+      throw new Error(`API Error: ${error.message}`);
     }
     
-    return await response.json();
+    return result as T;
   } catch (error) {
     console.error(`Error calling ${endpoint}:`, error);
     throw error;
