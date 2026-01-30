@@ -71,7 +71,13 @@ serve(async (req) => {
       '/optimize-crew',
       '/interview-coach',
       '/safety-compliance',
-      '/career-path'
+      '/career-path',
+      // Phase 2 AI Features
+      '/chat-support',
+      '/generate-resume',
+      '/generate-cover-letter',
+      '/draft-outreach',
+      '/market-intelligence'
     ]
     
     if (!allowedEndpoints.includes(endpoint)) {
