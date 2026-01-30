@@ -486,11 +486,11 @@ export default function MarketIntelligence() {
                   <CardTitle>Market Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{intelligence.intelligence.marketOverview.marketSummary}</p>
+                  <p className="text-muted-foreground">{intelligence.intelligence.marketOverview?.marketSummary}</p>
                   <div className="mt-4">
                     <h4 className="font-medium mb-2">Key Drivers</h4>
                     <div className="flex flex-wrap gap-2">
-                      {intelligence.intelligence.marketOverview.keyDrivers.map((driver, i) => (
+                      {(intelligence.intelligence.marketOverview?.keyDrivers || []).map((driver, i) => (
                         <Badge key={i} variant="secondary">{driver}</Badge>
                       ))}
                     </div>
@@ -499,7 +499,7 @@ export default function MarketIntelligence() {
               </Card>
 
               {/* Market Alerts */}
-              {intelligence.intelligence.marketAlerts.length > 0 && (
+              {(intelligence.intelligence.marketAlerts?.length || 0) > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -508,7 +508,7 @@ export default function MarketIntelligence() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {intelligence.intelligence.marketAlerts.map((alert, i) => (
+                    {(intelligence.intelligence.marketAlerts || []).map((alert, i) => (
                       <div key={i} className={`p-3 rounded-lg border-l-4 ${
                         alert.type === 'opportunity' ? 'border-l-green-500 bg-green-50' :
                         alert.type === 'warning' ? 'border-l-red-500 bg-red-50' :
@@ -542,13 +542,13 @@ export default function MarketIntelligence() {
                     <CardTitle>Salary by Experience</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {intelligence.intelligence.salaryIntelligence.byExperience.map((level, i) => (
+                    {(intelligence.intelligence.salaryIntelligence?.byExperience || []).map((level, i) => (
                       <div key={i} className="flex items-center justify-between">
                         <span className="text-sm">{level.level}</span>
                         <div className="text-right">
-                          <span className="font-semibold">${level.median.toLocaleString()}</span>
+                          <span className="font-semibold">${typeof level.median === 'number' ? level.median.toLocaleString() : level.median}</span>
                           <span className="text-xs text-muted-foreground ml-2">
-                            (${level.range.low.toLocaleString()} - ${level.range.high.toLocaleString()})
+                            (${typeof level.range?.low === 'number' ? level.range.low.toLocaleString() : level.range?.low || 'N/A'} - ${typeof level.range?.high === 'number' ? level.range.high.toLocaleString() : level.range?.high || 'N/A'})
                           </span>
                         </div>
                       </div>
@@ -561,11 +561,11 @@ export default function MarketIntelligence() {
                     <CardTitle>Salary by Industry</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {intelligence.intelligence.salaryIntelligence.byIndustry.map((ind, i) => (
+                    {(intelligence.intelligence.salaryIntelligence?.byIndustry || []).map((ind, i) => (
                       <div key={i} className="flex items-center justify-between">
                         <span className="text-sm">{ind.industry}</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold">${ind.median.toLocaleString()}</span>
+                          <span className="font-semibold">${typeof ind.median === 'number' ? ind.median.toLocaleString() : ind.median}</span>
                           {ind.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500" />}
                           {ind.trend === 'down' && <TrendingDown className="w-4 h-4 text-red-500" />}
                         </div>
@@ -586,13 +586,13 @@ export default function MarketIntelligence() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {intelligence.intelligence.demandAnalysis.hotSkills.map((skill, i) => (
+                    {(intelligence.intelligence.demandAnalysis?.hotSkills || []).map((skill, i) => (
                       <div key={i} className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span>{skill.skill}</span>
                           <span className="text-accent">{skill.premiumPotential}</span>
                         </div>
-                        <Progress value={skill.demandScore} className="h-2" />
+                        <Progress value={skill.demandScore || 0} className="h-2" />
                       </div>
                     ))}
                   </CardContent>
@@ -606,7 +606,7 @@ export default function MarketIntelligence() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {intelligence.intelligence.demandAnalysis.hotIndustries.map((ind, i) => (
+                    {(intelligence.intelligence.demandAnalysis?.hotIndustries || []).map((ind, i) => (
                       <div key={i} className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">{ind.industry}</p>
@@ -628,7 +628,7 @@ export default function MarketIntelligence() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {intelligence.intelligence.demandAnalysis.hotLocations.map((loc, i) => (
+                    {(intelligence.intelligence.demandAnalysis?.hotLocations || []).map((loc, i) => (
                       <div key={i} className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">{loc.location}</p>
@@ -641,14 +641,14 @@ export default function MarketIntelligence() {
                 </Card>
               </div>
 
-              {intelligence.intelligence.demandAnalysis.emergingOpportunities.length > 0 && (
+              {(intelligence.intelligence.demandAnalysis?.emergingOpportunities?.length || 0) > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Emerging Opportunities</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
-                      {intelligence.intelligence.demandAnalysis.emergingOpportunities.map((opp, i) => (
+                      {(intelligence.intelligence.demandAnalysis?.emergingOpportunities || []).map((opp, i) => (
                         <Badge key={i} variant="outline" className="px-3 py-1">
                           <Sparkles className="w-3 h-3 mr-1 text-accent" />
                           {opp}
@@ -683,12 +683,12 @@ export default function MarketIntelligence() {
                         </tr>
                       </thead>
                       <tbody>
-                        {intelligence.intelligence.certificationROI.map((cert, i) => (
+                        {(intelligence.intelligence.certificationROI || []).map((cert, i) => (
                           <tr key={i} className="border-b">
                             <td className="py-3 px-2 font-medium">{cert.certification}</td>
-                            <td className="py-3 px-2 text-right">${cert.cost.toLocaleString()}</td>
+                            <td className="py-3 px-2 text-right">${typeof cert.cost === 'number' ? cert.cost.toLocaleString() : cert.cost}</td>
                             <td className="py-3 px-2 text-right">{cert.timeToComplete}</td>
-                            <td className="py-3 px-2 text-right text-green-600">+${cert.salaryIncrease.toLocaleString()}</td>
+                            <td className="py-3 px-2 text-right text-green-600">+${typeof cert.salaryIncrease === 'number' ? cert.salaryIncrease.toLocaleString() : cert.salaryIncrease}</td>
                             <td className="py-3 px-2 text-right font-semibold">{cert.roi}</td>
                             <td className="py-3 px-2 text-center">
                               <Badge variant={cert.demandLevel === 'High' ? 'default' : 'secondary'}>
@@ -728,7 +728,7 @@ export default function MarketIntelligence() {
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2">
-                      {intelligence.intelligence.personalizedInsights.topOpportunities.map((opp, i) => (
+                      {(intelligence.intelligence.personalizedInsights?.topOpportunities || []).map((opp, i) => (
                         <li key={i} className="flex items-start gap-2">
                           <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
                           <span className="text-sm">{opp}</span>
@@ -739,14 +739,14 @@ export default function MarketIntelligence() {
                 </Card>
               </div>
 
-              {intelligence.intelligence.personalizedInsights.skillGaps.length > 0 && (
+              {(intelligence.intelligence.personalizedInsights?.skillGaps?.length || 0) > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Skills to Develop</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
-                      {intelligence.intelligence.personalizedInsights.skillGaps.map((gap, i) => (
+                      {(intelligence.intelligence.personalizedInsights?.skillGaps || []).map((gap, i) => (
                         <Badge key={i} variant="outline" className="text-orange-600 border-orange-300">
                           {gap}
                         </Badge>
@@ -765,7 +765,7 @@ export default function MarketIntelligence() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {intelligence.intelligence.personalizedInsights.actionItems.map((item, i) => (
+                    {(intelligence.intelligence.personalizedInsights?.actionItems || []).map((item, i) => (
                       <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
                         <div className={`w-2 h-2 rounded-full mt-2 ${
                           item.priority === 'high' ? 'bg-red-500' :
