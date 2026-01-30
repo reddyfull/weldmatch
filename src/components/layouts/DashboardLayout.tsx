@@ -29,6 +29,11 @@ import {
   Mic,
   Rocket,
   Shield,
+  MessageCircle,
+  FileText as FileTextIcon,
+  Mail,
+  BarChart3,
+  Send,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -47,6 +52,10 @@ interface DashboardLayoutProps {
 const welderNavItems: NavItem[] = [
   { label: "Dashboard", href: "/welder/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
   { label: "My Profile", href: "/welder/profile/edit", icon: <User className="w-5 h-5" /> },
+  { label: "AI Chat", href: "/welder/chat", icon: <MessageCircle className="w-5 h-5" /> },
+  { label: "Resume Builder", href: "/welder/resume-builder", icon: <FileTextIcon className="w-5 h-5" /> },
+  { label: "Cover Letter", href: "/welder/cover-letter", icon: <Mail className="w-5 h-5" /> },
+  { label: "Market Intel", href: "/welder/market-intelligence", icon: <BarChart3 className="w-5 h-5" /> },
   { label: "Career Coach", href: "/welder/career-coach", icon: <Sparkles className="w-5 h-5" /> },
   { label: "Weld Analyzer", href: "/welder/weld-analyzer", icon: <Microscope className="w-5 h-5" /> },
   { label: "Interview Coach", href: "/welder/interview-coach", icon: <Mic className="w-5 h-5" /> },
@@ -61,6 +70,9 @@ const employerNavItems: NavItem[] = [
   { label: "My Jobs", href: "/employer/jobs", icon: <Briefcase className="w-5 h-5" /> },
   { label: "Post New Job", href: "/employer/jobs/new", icon: <PlusCircle className="w-5 h-5" /> },
   { label: "Candidates", href: "/employer/candidates", icon: <Users className="w-5 h-5" /> },
+  { label: "AI Chat", href: "/employer/chat", icon: <MessageCircle className="w-5 h-5" /> },
+  { label: "Outreach", href: "/employer/outreach", icon: <Send className="w-5 h-5" /> },
+  { label: "Market Intel", href: "/employer/market-intelligence", icon: <BarChart3 className="w-5 h-5" /> },
   { label: "Crew Optimizer", href: "/employer/crew-optimizer", icon: <Users className="w-5 h-5" /> },
   { label: "Safety Monitor", href: "/employer/safety-monitor", icon: <Shield className="w-5 h-5" /> },
   { label: "Company Settings", href: "/employer/settings", icon: <Building className="w-5 h-5" /> },

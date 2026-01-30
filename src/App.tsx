@@ -29,6 +29,10 @@ import CareerCoach from "./pages/welder/CareerCoach";
 import WeldAnalyzer from "./pages/welder/WeldAnalyzer";
 import InterviewCoach from "./pages/welder/InterviewCoach";
 import CareerPathPredictor from "./pages/welder/CareerPathPredictor";
+import WelderAIChatAssistant from "./pages/welder/AIChatAssistant";
+import ResumeBuilder from "./pages/welder/ResumeBuilder";
+import CoverLetterGenerator from "./pages/welder/CoverLetterGenerator";
+import WelderMarketIntelligence from "./pages/welder/MarketIntelligence";
 
 // Employer Pages
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
@@ -40,6 +44,9 @@ import JobPostingForm from "./pages/employer/JobPostingForm";
 import EmployerSettings from "./pages/employer/EmployerSettings";
 import CrewOptimizer from "./pages/employer/CrewOptimizer";
 import SafetyMonitor from "./pages/employer/SafetyMonitor";
+import EmployerAIChatAssistant from "./pages/employer/AIChatAssistant";
+import CandidateOutreach from "./pages/employer/CandidateOutreach";
+import EmployerMarketIntelligence from "./pages/employer/MarketIntelligence";
 
 // Admin Pages
 import AdminCertifications from "./pages/admin/AdminCertifications";
@@ -83,6 +90,10 @@ const App = () => (
             <Route path="/welder/weld-analyzer" element={<WeldAnalyzer />} />
             <Route path="/welder/interview-coach" element={<InterviewCoach />} />
             <Route path="/welder/career-path" element={<CareerPathPredictor />} />
+            <Route path="/welder/chat" element={<WelderAIChatAssistant />} />
+            <Route path="/welder/resume-builder" element={<ResumeBuilder />} />
+            <Route path="/welder/cover-letter" element={<CoverLetterGenerator />} />
+            <Route path="/welder/market-intelligence" element={<WelderMarketIntelligence />} />
             
             {/* Employer Routes */}
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />
@@ -94,6 +105,9 @@ const App = () => (
             <Route path="/employer/settings" element={<EmployerSettings />} />
             <Route path="/employer/crew-optimizer" element={<CrewOptimizer />} />
             <Route path="/employer/safety-monitor" element={<SafetyMonitor />} />
+            <Route path="/employer/chat" element={<EmployerAIChatAssistant />} />
+            <Route path="/employer/outreach" element={<CandidateOutreach />} />
+            <Route path="/employer/market-intelligence" element={<EmployerMarketIntelligence />} />
             
             {/* Admin Routes */}
             <Route path="/admin/certifications" element={<AdminCertifications />} />
