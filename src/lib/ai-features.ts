@@ -305,7 +305,54 @@ export async function interviewCoach(
   });
 
   if (error) throw new Error(error.message);
-  return data;
+  
+  // Handle n8n array-wrapped responses
+  const result = Array.isArray(data) ? data[0] : data;
+  
+  // Transform n8n response format to expected interface
+  if (request.action === 'generate' && result.mode === 'generate' && result.question) {
+    // n8n returns single question, wrap in expected format
+    const n8nQuestion = result.question;
+    return {
+      success: result.success,
+      action: 'generate',
+      data: {
+        questions: [{
+          id: 1,
+          question: n8nQuestion.text,
+          type: n8nQuestion.type || 'technical',
+          difficulty: n8nQuestion.difficulty || 'medium',
+          keyPoints: n8nQuestion.idealAnswerPoints || [],
+          redFlags: n8nQuestion.redFlags || [],
+          followUp: n8nQuestion.followUpQuestions?.[0] || '',
+          timeLimit: n8nQuestion.timeLimit || 120,
+          skillsTested: n8nQuestion.keyTopics || [],
+        }],
+        interviewTips: [n8nQuestion.tip || 'Take your time and think through your answer.'],
+        totalTime: n8nQuestion.timeLimit || 120,
+      }
+    } as GenerateQuestionsResponse;
+  }
+  
+  // Handle evaluate response
+  if (request.action === 'evaluate' && result.mode === 'evaluate') {
+    return {
+      success: result.success,
+      action: 'evaluate',
+      data: result.evaluation || result.data || result
+    } as EvaluateAnswerResponse;
+  }
+  
+  // Handle summary response  
+  if (request.action === 'summary' && result.mode === 'summary') {
+    return {
+      success: result.success,
+      action: 'summary',
+      data: result.summary || result.data || result
+    } as GetSummaryResponse;
+  }
+  
+  return result;
 }
 
 // ==================== SAFETY COMPLIANCE MONITOR ====================
