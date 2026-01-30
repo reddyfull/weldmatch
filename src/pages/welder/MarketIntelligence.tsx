@@ -542,13 +542,17 @@ export default function MarketIntelligence() {
                     <CardTitle>Salary by Experience</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {(intelligence.intelligence.salaryIntelligence?.byExperience || []).map((level, i) => (
+                    {(intelligence.intelligence.salaryIntelligence?.byExperience || []).map((level: any, i) => (
                       <div key={i} className="flex items-center justify-between">
                         <span className="text-sm">{level.level}</span>
                         <div className="text-right">
-                          <span className="font-semibold">${typeof level.median === 'number' ? level.median.toLocaleString() : level.median}</span>
+                          <span className="font-semibold">
+                            ${typeof level.annualLow === 'number' && typeof level.annualHigh === 'number' 
+                              ? Math.round((level.annualLow + level.annualHigh) / 2).toLocaleString() 
+                              : 'N/A'}
+                          </span>
                           <span className="text-xs text-muted-foreground ml-2">
-                            (${typeof level.range?.low === 'number' ? level.range.low.toLocaleString() : level.range?.low || 'N/A'} - ${typeof level.range?.high === 'number' ? level.range.high.toLocaleString() : level.range?.high || 'N/A'})
+                            (${typeof level.annualLow === 'number' ? level.annualLow.toLocaleString() : 'N/A'} - ${typeof level.annualHigh === 'number' ? level.annualHigh.toLocaleString() : 'N/A'})
                           </span>
                         </div>
                       </div>
@@ -561,13 +565,13 @@ export default function MarketIntelligence() {
                     <CardTitle>Salary by Industry</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {(intelligence.intelligence.salaryIntelligence?.byIndustry || []).map((ind, i) => (
+                    {(intelligence.intelligence.salaryIntelligence?.byIndustry || []).map((ind: any, i) => (
                       <div key={i} className="flex items-center justify-between">
                         <span className="text-sm">{ind.industry}</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold">${typeof ind.median === 'number' ? ind.median.toLocaleString() : ind.median}</span>
-                          {ind.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500" />}
-                          {ind.trend === 'down' && <TrendingDown className="w-4 h-4 text-red-500" />}
+                          <span className="font-semibold">${typeof ind.medianAnnual === 'number' ? ind.medianAnnual.toLocaleString() : 'N/A'}</span>
+                          {typeof ind.premiumPercent === 'number' && ind.premiumPercent > 0 && <TrendingUp className="w-4 h-4 text-green-500" />}
+                          {typeof ind.premiumPercent === 'number' && ind.premiumPercent < 0 && <TrendingDown className="w-4 h-4 text-red-500" />}
                         </div>
                       </div>
                     ))}
