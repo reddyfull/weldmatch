@@ -72,7 +72,16 @@ function DemandBadge({ level, trend }: { level: string; trend: string }) {
   );
 }
 
-function SalaryGauge({ current, market }: { current?: number; market: { low: number; median: number; high: number } }) {
+function SalaryGauge({ current, market }: { current?: number; market?: { low: number; median: number; high: number } }) {
+  // Defensive check for undefined market data
+  if (!market || typeof market.low !== 'number' || typeof market.median !== 'number' || typeof market.high !== 'number') {
+    return (
+      <div className="text-sm text-muted-foreground text-center py-2">
+        Salary data not available
+      </div>
+    );
+  }
+
   const percentage = current 
     ? Math.min(100, Math.max(0, ((current - market.low) / (market.high - market.low)) * 100))
     : 50;
