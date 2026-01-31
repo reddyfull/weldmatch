@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ import { getMarketIntelligence, MarketIntelligenceResponse } from "@/lib/ai-phas
 import { toast } from "@/hooks/use-toast";
 import { WeldingLoadingAnimation } from "@/components/ai/WeldingLoadingAnimation";
 import { WELD_PROCESSES_FULL, CERTIFICATIONS_LIST, INDUSTRY_PREFERENCES } from "@/constants/aiFeatureOptions";
+import { supabase } from "@/integrations/supabase/client";
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
@@ -46,7 +47,9 @@ export default function EmployerMarketIntelligence() {
   const { user } = useAuth();
   const { data: employerProfile } = useEmployerProfile();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCached, setIsLoadingCached] = useState(true);
   const [intelligence, setIntelligence] = useState<MarketIntelligenceResponse | null>(null);
+  const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
 
   const [filters, setFilters] = useState({
     state: employerProfile?.state || "",
@@ -69,6 +72,40 @@ export default function EmployerMarketIntelligence() {
     updateFilter(field, updated);
   };
 
+  // Load cached data on mount
+  useEffect(() => {
+    const loadCachedData = async () => {
+      if (!employerProfile?.id) {
+        setIsLoadingCached(false);
+        return;
+      }
+
+      try {
+        // Check for cached employer market intelligence using user_id match
+        const { data: cached, error } = await supabase
+          .from('market_intelligence_results')
+          .select('*')
+          .eq('welder_id', employerProfile.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error loading cached intelligence:', error);
+        } else if (cached?.result_data) {
+          const resultData = cached.result_data as any;
+          setIntelligence(resultData);
+          setLastGeneratedAt(cached.updated_at);
+          console.log('Loaded cached employer market intelligence');
+        }
+      } catch (err) {
+        console.error('Failed to load cached data:', err);
+      } finally {
+        setIsLoadingCached(false);
+      }
+    };
+
+    loadCachedData();
+  }, [employerProfile?.id]);
+
   const fetchIntelligence = async () => {
     setIsLoading(true);
     try {
@@ -86,6 +123,39 @@ export default function EmployerMarketIntelligence() {
 
       if (response.success) {
         setIntelligence(response);
+        setLastGeneratedAt(new Date().toISOString());
+
+        // Cache to database
+        if (employerProfile?.id) {
+          const { error: upsertError } = await supabase
+            .from('market_intelligence_results')
+            .upsert({
+              welder_id: employerProfile.id,
+              result_data: response as any,
+              request_context: {
+                userType: 'employer',
+                location: { city: filters.city, state: filters.state },
+                filters: {
+                  industries: filters.industries,
+                  processes: filters.processes,
+                  certifications: filters.certifications,
+                  experienceLevel: filters.experienceLevel,
+                },
+              },
+              profile_snapshot: {
+                company_name: employerProfile.company_name,
+                industry: employerProfile.industry,
+                city: employerProfile.city,
+                state: employerProfile.state,
+              },
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'welder_id' });
+
+          if (upsertError) {
+            console.error('Failed to cache intelligence:', upsertError);
+          }
+        }
+
         toast({
           title: "Market Data Updated",
           description: "Fresh hiring intelligence loaded.",
@@ -104,6 +174,16 @@ export default function EmployerMarketIntelligence() {
       setIsLoading(false);
     }
   };
+
+  if (isLoading || isLoadingCached) {
+    return (
+      <DashboardLayout userType="employer">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <WeldingLoadingAnimation message={isLoadingCached ? "Loading cached data..." : "Analyzing hiring market data..."} />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -347,20 +427,25 @@ export default function EmployerMarketIntelligence() {
                     <CardDescription>What to offer at each level</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {intelligence.intelligence.salaryIntelligence.byExperience.map((level, i) => (
-                      <div key={i} className="space-y-1">
-                        <div className="flex justify-between">
-                          <span className="font-medium">{level.level}</span>
-                          <span className="text-accent font-semibold">${level.median}/hr</span>
+                    {(intelligence.intelligence.salaryIntelligence?.byExperience || []).map((level: any, i) => {
+                      const hourlyMid = typeof level.hourlyLow === 'number' && typeof level.hourlyHigh === 'number'
+                        ? Math.round((level.hourlyLow + level.hourlyHigh) / 2)
+                        : (typeof level.median === 'number' ? level.median : 0);
+                      return (
+                        <div key={i} className="space-y-1">
+                          <div className="flex justify-between">
+                            <span className="font-medium">{level.level}</span>
+                            <span className="text-accent font-semibold">${hourlyMid}/hr</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Progress value={((hourlyMid - 20) / 60) * 100} className="flex-1 h-2" />
+                            <span className="text-xs text-muted-foreground w-24">
+                              ${typeof level.hourlyLow === 'number' ? level.hourlyLow : level.range?.low || 'N/A'} - ${typeof level.hourlyHigh === 'number' ? level.hourlyHigh : level.range?.high || 'N/A'}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Progress value={((level.median - 20) / 60) * 100} className="flex-1 h-2" />
-                          <span className="text-xs text-muted-foreground w-24">
-                            ${level.range.low} - ${level.range.high}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </CardContent>
                 </Card>
 
@@ -370,15 +455,17 @@ export default function EmployerMarketIntelligence() {
                     <CardDescription>Additional pay for certified welders</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {intelligence.intelligence.salaryIntelligence.byCertification.map((cert, i) => (
+                    {(intelligence.intelligence.salaryIntelligence?.byCertification || []).map((cert: any, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                         <div className="flex items-center gap-2">
                           <Award className="w-4 h-4 text-accent" />
                           <span>{cert.certification}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-green-600 font-semibold">+${cert.premium}/hr</span>
-                          <p className="text-xs text-muted-foreground">${cert.medianWithCert}/hr with cert</p>
+                          <span className="text-green-600 font-semibold">
+                            +${typeof cert.salaryPremium === 'number' ? Math.round(cert.salaryPremium / 2080) : (cert.premium || 0)}/hr
+                          </span>
+                          <p className="text-xs text-muted-foreground">{cert.demandLevel || 'High demand'}</p>
                         </div>
                       </div>
                     ))}
@@ -392,14 +479,18 @@ export default function EmployerMarketIntelligence() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {intelligence.intelligence.salaryIntelligence.byIndustry.map((ind, i) => (
+                    {(intelligence.intelligence.salaryIntelligence?.byIndustry || []).map((ind: any, i) => (
                       <div key={i} className="p-3 rounded-lg border text-center">
                         <p className="font-medium">{ind.industry}</p>
-                        <p className="text-2xl font-bold text-accent">${ind.median}</p>
+                        <p className="text-2xl font-bold text-accent">
+                          ${typeof ind.medianHourly === 'number' ? ind.medianHourly : (ind.median || 'N/A')}
+                        </p>
                         <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                          {ind.trend === 'up' && <TrendingUp className="w-3 h-3 text-green-500" />}
-                          {ind.trend === 'down' && <TrendingDown className="w-3 h-3 text-red-500" />}
-                          {ind.trend === 'up' ? 'Rising' : ind.trend === 'down' ? 'Falling' : 'Stable'}
+                          {typeof ind.premiumPercent === 'number' && ind.premiumPercent > 0 && <TrendingUp className="w-3 h-3 text-green-500" />}
+                          {typeof ind.premiumPercent === 'number' && ind.premiumPercent < 0 && <TrendingDown className="w-3 h-3 text-red-500" />}
+                          {typeof ind.premiumPercent === 'number' 
+                            ? (ind.premiumPercent > 0 ? `+${ind.premiumPercent}%` : `${ind.premiumPercent}%`)
+                            : (ind.trend === 'up' ? 'Rising' : ind.trend === 'down' ? 'Falling' : 'Stable')}
                         </div>
                       </div>
                     ))}
