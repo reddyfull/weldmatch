@@ -22,8 +22,10 @@ import {
   AlertCircle,
   Users,
   Building,
-  Flame
+  Flame,
+  Clock
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEmployerProfile } from "@/hooks/useUserProfile";
 import { getMarketIntelligence, MarketIntelligenceResponse } from "@/lib/ai-phase2";
@@ -199,7 +201,7 @@ export default function EmployerMarketIntelligence() {
     <DashboardLayout userType="employer">
       <div className="p-4 lg:p-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center shadow-lg">
               <BarChart3 className="w-6 h-6 text-white" />
@@ -209,10 +211,20 @@ export default function EmployerMarketIntelligence() {
               <p className="text-sm text-muted-foreground">Salary benchmarks & talent market insights</p>
             </div>
           </div>
-          <Button onClick={fetchIntelligence} disabled={isLoading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            {intelligence ? 'Refresh Data' : 'Load Intelligence'}
-          </Button>
+          <div className="flex items-center gap-3">
+            {lastGeneratedAt && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  Last analyzed {formatDistanceToNow(new Date(lastGeneratedAt), { addSuffix: true })}
+                </span>
+              </div>
+            )}
+            <Button onClick={fetchIntelligence} disabled={isLoading}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              {intelligence ? 'Refresh Data' : 'Load Intelligence'}
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}

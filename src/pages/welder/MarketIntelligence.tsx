@@ -309,10 +309,12 @@ export default function MarketIntelligence() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {isCached && lastUpdated && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Database className="w-3.5 h-3.5" />
-                <span>Updated {formatDistanceToNow(new Date(lastUpdated), { addSuffix: true })}</span>
+            {lastUpdated && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  Last analyzed {formatDistanceToNow(new Date(lastUpdated), { addSuffix: true })}
+                </span>
               </div>
             )}
             <Button onClick={() => fetchIntelligence(true)} disabled={isLoading}>
