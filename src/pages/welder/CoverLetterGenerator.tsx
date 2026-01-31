@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Mail, 
   Sparkles, 
@@ -18,13 +17,17 @@ import {
   FileText,
   Briefcase,
   User,
-  Loader2
+  FileDown,
+  AlertCircle
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWelderProfile } from "@/hooks/useUserProfile";
 import { generateCoverLetter, CoverLetterResponse } from "@/lib/ai-phase2";
 import { toast } from "@/hooks/use-toast";
 import { WeldingLoadingAnimation } from "@/components/ai/WeldingLoadingAnimation";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
+import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
 import { WELD_PROCESSES_FULL, CERTIFICATIONS_LIST } from "@/constants/aiFeatureOptions";
 
 interface FormData {
@@ -131,9 +134,57 @@ export default function CoverLetterGenerator() {
     }
   };
 
+  const getFormattedLetter = () => {
+    if (!generatedLetter) return '';
+    
+    // Check if formattedLetter exists and is not empty
+    if (generatedLetter.coverLetter?.formattedLetter) {
+      return generatedLetter.coverLetter.formattedLetter;
+    }
+    
+    // Fallback: construct letter from parts if formattedLetter is empty
+    const cl = generatedLetter.coverLetter;
+    const parts: string[] = [];
+    
+    // Header
+    if (cl.header?.name) parts.push(cl.header.name);
+    if (cl.header?.location) parts.push(cl.header.location);
+    if (cl.header?.email) parts.push(cl.header.email);
+    if (cl.header?.phone) parts.push(cl.header.phone);
+    if (cl.header?.date) parts.push(cl.header.date);
+    if (parts.length > 0) parts.push('');
+    
+    // Salutation
+    if (cl.salutation) parts.push(cl.salutation, '');
+    
+    // Opening
+    if (cl.openingParagraph) parts.push(cl.openingParagraph, '');
+    
+    // Body paragraphs
+    if (cl.bodyParagraphs && cl.bodyParagraphs.length > 0) {
+      cl.bodyParagraphs.forEach((p: any) => {
+        if (typeof p === 'string') {
+          parts.push(p, '');
+        } else if (p.content) {
+          parts.push(p.content, '');
+        }
+      });
+    }
+    
+    // Closing
+    if (cl.closingParagraph) parts.push(cl.closingParagraph, '');
+    
+    // Signature
+    if (cl.signature?.closing) parts.push(cl.signature.closing);
+    if (cl.signature?.name) parts.push(cl.signature.name);
+    
+    return parts.join('\n');
+  };
+
   const copyToClipboard = async () => {
-    if (generatedLetter?.coverLetter.formattedLetter) {
-      await navigator.clipboard.writeText(generatedLetter.coverLetter.formattedLetter);
+    const letter = getFormattedLetter();
+    if (letter) {
+      await navigator.clipboard.writeText(letter);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast({ title: "Copied to clipboard!" });
@@ -141,8 +192,9 @@ export default function CoverLetterGenerator() {
   };
 
   const downloadAsTxt = () => {
-    if (generatedLetter?.coverLetter.formattedLetter) {
-      const blob = new Blob([generatedLetter.coverLetter.formattedLetter], { type: 'text/plain' });
+    const letter = getFormattedLetter();
+    if (letter) {
+      const blob = new Blob([letter], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -150,6 +202,65 @@ export default function CoverLetterGenerator() {
       a.click();
       URL.revokeObjectURL(url);
     }
+  };
+
+  const downloadAsWord = async () => {
+    const letter = getFormattedLetter();
+    if (!letter) return;
+
+    const paragraphs = letter.split('\n').map((line, index) => {
+      // First line is typically name/header
+      if (index === 0 && line.trim()) {
+        return new Paragraph({
+          children: [new TextRun({ text: line, bold: true, size: 28 })],
+          spacing: { after: 200 }
+        });
+      }
+      return new Paragraph({
+        children: [new TextRun({ text: line, size: 24 })],
+        spacing: { after: 120 }
+      });
+    });
+
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: paragraphs
+      }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `CoverLetter_${formData.company.replace(/\s+/g, '_')}.docx`);
+    toast({ title: "Downloaded as Word document!" });
+  };
+
+  const downloadAsPdf = () => {
+    const letter = getFormattedLetter();
+    if (!letter) return;
+
+    const pdf = new jsPDF();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 20;
+    const maxWidth = pageWidth - margin * 2;
+    
+    pdf.setFont("helvetica");
+    pdf.setFontSize(12);
+    
+    const lines = pdf.splitTextToSize(letter, maxWidth);
+    let yPosition = margin;
+    const lineHeight = 7;
+    
+    lines.forEach((line: string) => {
+      if (yPosition > pdf.internal.pageSize.getHeight() - margin) {
+        pdf.addPage();
+        yPosition = margin;
+      }
+      pdf.text(line, margin, yPosition);
+      yPosition += lineHeight;
+    });
+    
+    pdf.save(`CoverLetter_${formData.company.replace(/\s+/g, '_')}.pdf`);
+    toast({ title: "Downloaded as PDF!" });
   };
 
   if (isGenerating) {
@@ -191,11 +302,19 @@ export default function CoverLetterGenerator() {
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button className="w-full" onClick={copyToClipboard}>
+                  <Button className="w-full" onClick={copyToClipboard} disabled={!getFormattedLetter()}>
                     {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
                     {copied ? "Copied!" : "Copy to Clipboard"}
                   </Button>
-                  <Button variant="outline" className="w-full" onClick={downloadAsTxt}>
+                  <Button variant="outline" className="w-full" onClick={downloadAsWord} disabled={!getFormattedLetter()}>
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Download as Word
+                  </Button>
+                  <Button variant="outline" className="w-full" onClick={downloadAsPdf} disabled={!getFormattedLetter()}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Download as PDF
+                  </Button>
+                  <Button variant="ghost" className="w-full" onClick={downloadAsTxt} disabled={!getFormattedLetter()}>
                     <Download className="w-4 h-4 mr-2" />
                     Download as TXT
                   </Button>
@@ -211,11 +330,15 @@ export default function CoverLetterGenerator() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-1">
-                    {generatedLetter.coverLetter.keywordsUsed.map((keyword, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {keyword}
-                      </Badge>
-                    ))}
+                    {(generatedLetter.coverLetter?.keywordsUsed || []).length > 0 ? (
+                      generatedLetter.coverLetter.keywordsUsed.map((keyword, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {keyword}
+                        </Badge>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No keywords extracted</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -225,14 +348,18 @@ export default function CoverLetterGenerator() {
                   <CardTitle>Strength Highlights</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-2 text-sm">
-                    {generatedLetter.coverLetter.strengthHighlights.map((highlight, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                        {highlight}
-                      </li>
-                    ))}
-                  </ul>
+                  {(generatedLetter.coverLetter?.strengthHighlights || []).length > 0 ? (
+                    <ul className="space-y-2 text-sm">
+                      {generatedLetter.coverLetter.strengthHighlights.map((highlight, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                          {highlight}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No highlights available</p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -244,11 +371,22 @@ export default function CoverLetterGenerator() {
                   <CardTitle>Cover Letter Preview</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-[600px] border rounded-lg p-6 bg-white">
-                    <pre className="whitespace-pre-wrap font-serif text-sm text-gray-800 leading-relaxed">
-                      {generatedLetter.coverLetter.formattedLetter}
-                    </pre>
-                  </ScrollArea>
+                  {getFormattedLetter() ? (
+                    <ScrollArea className="h-[600px] border rounded-lg p-6 bg-white">
+                      <pre className="whitespace-pre-wrap font-serif text-sm text-gray-800 leading-relaxed">
+                        {getFormattedLetter()}
+                      </pre>
+                    </ScrollArea>
+                  ) : (
+                    <div className="h-[600px] border rounded-lg p-6 bg-muted/30 flex flex-col items-center justify-center text-center">
+                      <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
+                      <h3 className="font-semibold text-lg mb-2">Cover Letter Content Not Generated</h3>
+                      <p className="text-muted-foreground max-w-md">
+                        The AI service returned an empty letter. This may happen if the job description was too brief. 
+                        Try adding more details about the job or click "Create Another" to retry.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
