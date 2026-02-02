@@ -451,6 +451,53 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_resumes: {
+        Row: {
+          ats_score: number | null
+          created_at: string
+          form_data: Json | null
+          format_style: string | null
+          id: string
+          is_active: boolean | null
+          resume_data: Json
+          suggestions: string[] | null
+          updated_at: string
+          welder_id: string
+        }
+        Insert: {
+          ats_score?: number | null
+          created_at?: string
+          form_data?: Json | null
+          format_style?: string | null
+          id?: string
+          is_active?: boolean | null
+          resume_data: Json
+          suggestions?: string[] | null
+          updated_at?: string
+          welder_id: string
+        }
+        Update: {
+          ats_score?: number | null
+          created_at?: string
+          form_data?: Json | null
+          format_style?: string | null
+          id?: string
+          is_active?: boolean | null
+          resume_data?: Json
+          suggestions?: string[] | null
+          updated_at?: string
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_resumes_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: true
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_aggregator_logs: {
         Row: {
           completed_at: string | null
