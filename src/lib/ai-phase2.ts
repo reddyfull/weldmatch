@@ -465,7 +465,10 @@ async function callAIEndpoint<T>(endpoint: string, data: object): Promise<T> {
       throw new Error(`API Error: ${error.message}`);
     }
     
-    return result as T;
+    // n8n often returns responses wrapped in an array - unwrap if needed
+    const unwrapped = Array.isArray(result) ? result[0] : result;
+    
+    return unwrapped as T;
   } catch (error) {
     console.error(`Error calling ${endpoint}:`, error);
     throw error;
