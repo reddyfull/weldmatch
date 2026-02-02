@@ -1,23 +1,84 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Flame, Wrench, Building, ArrowRight } from "lucide-react";
-import { useUpdateProfile } from "@/hooks/useUserProfile";
+import { ArrowRight, Building, Flame, Loader2, Wrench } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEmployerProfile, useUserProfile, useWelderProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ChooseRole() {
   const navigate = useNavigate();
-  const updateProfile = useUpdateProfile();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  const { data: userProfile, isLoading: profileLoading } = useUserProfile();
+  const { data: welderProfile, isLoading: welderLoading } = useWelderProfile();
+  const { data: employerProfile, isLoading: employerLoading } = useEmployerProfile();
+  const [isSavingRole, setIsSavingRole] = useState(false);
+
+  // Require auth
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) navigate("/login", { replace: true });
+  }, [authLoading, user, navigate]);
+
+  // If user already has a type, they should never see Choose Role again.
+  useEffect(() => {
+    if (authLoading || profileLoading || welderLoading || employerLoading) return;
+    if (!user) return;
+
+    const userType = userProfile?.user_type;
+    if (userType === "welder") {
+      navigate(welderProfile ? "/welder/dashboard" : "/welder/profile/setup", { replace: true });
+      return;
+    }
+    if (userType === "employer") {
+      navigate(employerProfile ? "/employer/dashboard" : "/employer/profile/setup", { replace: true });
+      return;
+    }
+  }, [
+    authLoading,
+    profileLoading,
+    welderLoading,
+    employerLoading,
+    user,
+    userProfile?.user_type,
+    welderProfile,
+    employerProfile,
+    navigate,
+  ]);
 
   const handleRoleSelect = async (role: "welder" | "employer") => {
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
     try {
-      await updateProfile.mutateAsync({ user_type: role });
+      setIsSavingRole(true);
+
+      // Use upsert so we don't fail if a profile row wasn't created yet.
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: user.id,
+            user_type: role,
+          },
+          { onConflict: "id" }
+        );
+
+      if (error) throw error;
+
+      // Refresh cached profile so /dashboard routing sees the new type immediately.
+      await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
       
       if (role === "welder") {
-        navigate("/welder/profile/setup");
+        navigate("/welder/profile/setup", { replace: true });
       } else {
-        navigate("/employer/profile/setup");
+        navigate("/employer/profile/setup", { replace: true });
       }
     } catch (error) {
       toast({
@@ -25,8 +86,23 @@ export default function ChooseRole() {
         description: "Failed to update your role. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSavingRole(false);
     }
   };
+
+  const isLoading = authLoading || profileLoading || welderLoading || employerLoading;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary via-primary/95 to-primary-dark flex items-center justify-center">
+        <div className="flex items-center gap-2 text-white">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span>Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary/95 to-primary-dark flex items-center justify-center p-4">
@@ -60,7 +136,7 @@ export default function ChooseRole() {
             {/* Welder Option */}
             <button
               onClick={() => handleRoleSelect("welder")}
-              disabled={updateProfile.isPending}
+              disabled={isSavingRole}
               className="group relative p-6 rounded-xl border-2 border-border hover:border-accent bg-card text-left transition-all hover:shadow-lg disabled:opacity-50"
             >
               <div className="space-y-4">
@@ -85,7 +161,7 @@ export default function ChooseRole() {
             {/* Employer Option */}
             <button
               onClick={() => handleRoleSelect("employer")}
-              disabled={updateProfile.isPending}
+              disabled={isSavingRole}
               className="group relative p-6 rounded-xl border-2 border-border hover:border-accent bg-card text-left transition-all hover:shadow-lg disabled:opacity-50"
             >
               <div className="space-y-4">
