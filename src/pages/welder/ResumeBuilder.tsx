@@ -150,10 +150,12 @@ export default function ResumeBuilder() {
       });
 
       if (response.success) {
-        setGeneratedResume(response);
+        // Transform n8n response to expected format if needed
+        const transformedResponse = transformN8nResponse(response, formData);
+        setGeneratedResume(transformedResponse);
         toast({
           title: "Resume Generated!",
-          description: `ATS Score: ${response.atsScore}%`,
+          description: transformedResponse.atsScore ? `ATS Score: ${transformedResponse.atsScore}%` : "Your resume is ready!",
         });
       } else {
         throw new Error("Failed to generate resume");
@@ -168,6 +170,160 @@ export default function ResumeBuilder() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Transform n8n response to match expected ResumeResponse format
+  const transformN8nResponse = (response: any, formData: FormData): ResumeResponse => {
+    const resume = response.resume || {};
+    const profile = response.profile || {};
+    
+    // Build formatted text from components if not provided
+    let formattedText = resume.formattedText || "";
+    
+    if (!formattedText) {
+      const sections: string[] = [];
+      
+      // Header
+      const name = profile.name || formData.name || "";
+      const email = profile.email || formData.email || "";
+      const phone = profile.phone || formData.phone || "";
+      const location = profile.location || formData.location || "";
+      
+      sections.push(name.toUpperCase());
+      sections.push([email, phone, location].filter(Boolean).join(" | "));
+      sections.push("");
+      
+      // Professional Summary
+      if (resume.professionalSummary || profile.summary) {
+        sections.push("PROFESSIONAL SUMMARY");
+        sections.push("-".repeat(50));
+        sections.push(resume.professionalSummary || profile.summary || "");
+        sections.push("");
+      }
+      
+      // Core Competencies
+      if (resume.coreCompetencies?.length > 0) {
+        sections.push("CORE COMPETENCIES");
+        sections.push("-".repeat(50));
+        sections.push(resume.coreCompetencies.join(" • "));
+        sections.push("");
+      }
+      
+      // Certifications
+      if (resume.certifications?.length > 0) {
+        sections.push("CERTIFICATIONS");
+        sections.push("-".repeat(50));
+        resume.certifications.forEach((cert: any) => {
+          if (typeof cert === "string") {
+            sections.push(`• ${cert}`);
+          } else {
+            sections.push(`• ${cert.title || cert.name}${cert.issuer ? ` - ${cert.issuer}` : ""}${cert.positions ? ` (${cert.positions})` : ""}`);
+          }
+        });
+        sections.push("");
+      }
+      
+      // Technical Skills
+      if (resume.technicalSkills && Object.keys(resume.technicalSkills).length > 0) {
+        sections.push("TECHNICAL SKILLS");
+        sections.push("-".repeat(50));
+        Object.entries(resume.technicalSkills).forEach(([key, value]) => {
+          if (value) {
+            sections.push(`${key}: ${Array.isArray(value) ? (value as string[]).join(", ") : value}`);
+          }
+        });
+        sections.push("");
+      } else if (profile.processes?.length > 0 || profile.positions?.length > 0) {
+        sections.push("TECHNICAL SKILLS");
+        sections.push("-".repeat(50));
+        if (profile.processes?.length > 0) {
+          sections.push(`Welding Processes: ${profile.processes.join(", ")}`);
+        }
+        if (profile.positions?.length > 0) {
+          sections.push(`Positions: ${profile.positions.join(", ")}`);
+        }
+        sections.push("");
+      }
+      
+      // Work Experience
+      const workHistory = resume.workExperience?.length > 0 ? resume.workExperience : profile.workHistory;
+      if (workHistory?.length > 0) {
+        sections.push("PROFESSIONAL EXPERIENCE");
+        sections.push("-".repeat(50));
+        workHistory.forEach((job: any) => {
+          if (job.company || job.title) {
+            sections.push(`${job.title || job.position || "Position"} | ${job.company || "Company"}`);
+            if (job.location) sections.push(job.location);
+            if (job.startDate || job.endDate) {
+              sections.push(`${job.startDate || ""} - ${job.current ? "Present" : (job.endDate || "")}`);
+            }
+            if (job.responsibilities?.length > 0) {
+              job.responsibilities.forEach((resp: string) => {
+                if (resp) sections.push(`  • ${resp}`);
+              });
+            }
+            sections.push("");
+          }
+        });
+      }
+      
+      // Education
+      if (resume.education?.length > 0) {
+        sections.push("EDUCATION");
+        sections.push("-".repeat(50));
+        resume.education.forEach((edu: any) => {
+          sections.push(`${edu.degree || edu.program} - ${edu.institution || edu.school}`);
+          if (edu.location) sections.push(edu.location);
+          if (edu.graduation || edu.year) sections.push(edu.graduation || edu.year);
+          sections.push("");
+        });
+      }
+      
+      formattedText = sections.join("\n");
+    }
+    
+    // Return normalized response
+    return {
+      success: true,
+      resume: {
+        header: {
+          name: profile.name || formData.name,
+          email: profile.email || formData.email,
+          phone: profile.phone || formData.phone,
+          location: profile.location || formData.location,
+          linkedIn: formData.linkedIn,
+        },
+        summary: resume.professionalSummary || profile.summary || "",
+        certifications: {
+          title: "Certifications",
+          items: (resume.certifications || []).map((c: any) => 
+            typeof c === "string" ? c : `${c.title || c.name}${c.issuer ? ` - ${c.issuer}` : ""}`
+          ),
+        },
+        experience: (resume.workExperience || profile.workHistory || []).map((job: any) => ({
+          company: job.company || "",
+          title: job.title || job.position || "",
+          location: job.location || "",
+          dates: `${job.startDate || ""} - ${job.current ? "Present" : (job.endDate || "")}`,
+          bullets: job.responsibilities || [],
+        })),
+        skills: {
+          processes: profile.processes || formData.processes || [],
+          positions: profile.positions || formData.positions || [],
+          additional: profile.skills || [],
+        },
+        education: (resume.education || []).map((edu: any) => ({
+          school: edu.institution || edu.school || "",
+          degree: edu.degree || edu.program || "",
+          year: edu.graduation || edu.year || "",
+        })),
+        formattedText,
+        jsonStructure: resume,
+      },
+      atsScore: response.atsScore || 75, // Default score if not provided
+      suggestions: response.suggestions || [],
+      generatedAt: response.generatedAt || new Date().toISOString(),
+    };
   };
 
   const copyToClipboard = async () => {
