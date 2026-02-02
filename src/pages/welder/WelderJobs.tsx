@@ -67,11 +67,6 @@ interface Job {
     id: string;
     company_name: string;
     logo_url: string | null;
-    user_id: string;
-    profiles: {
-      full_name: string | null;
-      phone: string | null;
-    } | null;
   } | null;
 }
 
@@ -159,12 +154,7 @@ export default function WelderJobs() {
           employer_profiles (
             id,
             company_name,
-            logo_url,
-            user_id,
-            profiles:user_id (
-              full_name,
-              phone
-            )
+            logo_url
           )
         `)
         .eq('status', 'active')
@@ -338,11 +328,6 @@ export default function WelderJobs() {
 
   const handleApply = async () => {
     if (!selectedJob || !welderProfile) return;
-
-    const employerProfile = selectedJob.employer_profiles;
-    const profiles = Array.isArray(employerProfile?.profiles) 
-      ? employerProfile.profiles[0] 
-      : employerProfile?.profiles;
 
     const result = await apply({
       jobId: selectedJob.id,
