@@ -164,6 +164,36 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
         <NavContent />
       </aside>
 
+      {/* Desktop Top Bar */}
+      <header className="hidden lg:flex fixed top-0 left-64 right-0 z-40 bg-card border-b border-border h-16 items-center justify-end px-6">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2 h-10 px-3">
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={avatarUrl || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium">{displayName}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col">
+                <span>{displayName}</span>
+                <span className="text-xs text-muted-foreground font-normal">{user?.email}</span>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </header>
+
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 h-16">
@@ -196,7 +226,7 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
                 </DropdownMenuItem>
@@ -219,7 +249,7 @@ export function DashboardLayout({ children, userType }: DashboardLayoutProps) {
 
       {/* Main Content */}
       <main className="lg:pl-64">
-        <div className="pt-16 lg:pt-0 min-h-screen">
+        <div className="pt-16 min-h-screen">
           {children}
         </div>
       </main>
