@@ -30,7 +30,6 @@ import {
   CheckCircle,
   Building,
   Globe,
-  Phone,
   Calendar,
   Users,
   Loader2,
@@ -68,12 +67,6 @@ interface Job {
     website: string | null;
     city: string | null;
     state: string | null;
-    phone: string | null;
-    user_id: string;
-    profiles: {
-      full_name: string | null;
-      phone: string | null;
-    } | null;
   } | null;
 }
 
@@ -148,13 +141,7 @@ export default function JobDetail() {
             company_size,
             website,
             city,
-            state,
-            phone,
-            user_id,
-            profiles:user_id (
-              full_name,
-              phone
-            )
+            state
           )
         `)
         .eq('id', jobId)
@@ -288,11 +275,6 @@ export default function JobDetail() {
 
   const handleApply = async () => {
     if (!job || !welderProfile) return;
-
-    const employerProfile = job.employer_profiles;
-    const profiles = Array.isArray(employerProfile?.profiles)
-      ? employerProfile.profiles[0]
-      : employerProfile?.profiles;
 
     const result = await apply({
       jobId: job.id,
@@ -662,12 +644,6 @@ export default function JobDetail() {
                         >
                           {employer.website.replace(/^https?:\/\//, '')}
                         </a>
-                      </div>
-                    )}
-                    {employer.phone && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Phone className="h-4 w-4 shrink-0" />
-                        <span>{employer.phone}</span>
                       </div>
                     )}
                   </div>

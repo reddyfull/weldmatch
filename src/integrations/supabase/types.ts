@@ -106,6 +106,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "candidate_profile_views_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "candidate_profile_views_welder_id_fkey"
             columns: ["welder_id"]
             isOneToOne: false
@@ -585,6 +592,13 @@ export type Database = {
             referencedRelation: "employer_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "job_templates_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       jobs: {
@@ -678,6 +692,13 @@ export type Database = {
             columns: ["employer_id"]
             isOneToOne: false
             referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1315,7 +1336,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      employer_profiles_public: {
+        Row: {
+          city: string | null
+          company_name: string | null
+          company_size: Database["public"]["Enums"]["company_size"] | null
+          description: string | null
+          id: string | null
+          industry: string | null
+          logo_url: string | null
+          state: string | null
+          website: string | null
+        }
+        Insert: {
+          city?: string | null
+          company_name?: string | null
+          company_size?: Database["public"]["Enums"]["company_size"] | null
+          description?: string | null
+          id?: string | null
+          industry?: string | null
+          logo_url?: string | null
+          state?: string | null
+          website?: string | null
+        }
+        Update: {
+          city?: string | null
+          company_name?: string | null
+          company_size?: Database["public"]["Enums"]["company_size"] | null
+          description?: string | null
+          id?: string | null
+          industry?: string | null
+          logo_url?: string | null
+          state?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_profile_completion: {
