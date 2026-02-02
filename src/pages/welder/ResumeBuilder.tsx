@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,14 +21,26 @@ import {
   ChevronRight,
   ChevronLeft,
   Loader2,
-  Award
+  Award,
+  Save,
+  RefreshCw,
+  FileDown,
+  File
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWelderProfile } from "@/hooks/useUserProfile";
+import { useGeneratedResume, useSaveResume } from "@/hooks/useGeneratedResume";
 import { generateResume, WorkExperience, ResumeResponse } from "@/lib/ai-phase2";
+import { exportResumePDF, exportResumeWord, exportResumeTxt } from "@/lib/resumeExport";
 import { toast } from "@/hooks/use-toast";
 import { WeldingLoadingAnimation } from "@/components/ai/WeldingLoadingAnimation";
 import { WELD_PROCESSES_FULL, WELD_POSITIONS_FULL, CERTIFICATIONS_LIST, INDUSTRY_PREFERENCES } from "@/constants/aiFeatureOptions";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface FormData {
   name: string;
@@ -64,10 +76,15 @@ const initialWorkExperience: WorkExperience = {
 export default function ResumeBuilder() {
   const { user } = useAuth();
   const { data: welderProfile } = useWelderProfile();
+  const { data: savedResume, isLoading: isLoadingSaved } = useGeneratedResume();
+  const saveResume = useSaveResume();
+  
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [generatedResume, setGeneratedResume] = useState<ResumeResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const [hasLoadedSaved, setHasLoadedSaved] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -90,6 +107,17 @@ export default function ResumeBuilder() {
     targetJob: "",
     targetIndustry: "",
   });
+
+  // Load saved resume on mount
+  useEffect(() => {
+    if (savedResume && !hasLoadedSaved && !generatedResume) {
+      setGeneratedResume(savedResume.resume_data);
+      if (savedResume.form_data) {
+        setFormData(savedResume.form_data as FormData);
+      }
+      setHasLoadedSaved(true);
+    }
+  }, [savedResume, hasLoadedSaved, generatedResume]);
 
   const totalSteps = 4;
 
@@ -335,16 +363,49 @@ export default function ResumeBuilder() {
     }
   };
 
-  const downloadAsTxt = () => {
-    if (generatedResume?.resume.formattedText) {
-      const blob = new Blob([generatedResume.resume.formattedText], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${formData.name.replace(/\s+/g, '_')}_Resume.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
+  const handleSaveResume = async () => {
+    if (!generatedResume) return;
+    
+    setIsSaving(true);
+    try {
+      await saveResume.mutateAsync({
+        resumeData: generatedResume,
+        formData: formData,
+        atsScore: generatedResume.atsScore || 75,
+        suggestions: generatedResume.suggestions || [],
+        formatStyle: formData.formatStyle,
+      });
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!generatedResume) return;
+    try {
+      await exportResumePDF(generatedResume, formData.name || "Resume");
+      toast({ title: "PDF Downloaded!" });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast({ title: "Error", description: "Failed to export PDF", variant: "destructive" });
+    }
+  };
+
+  const handleDownloadWord = async () => {
+    if (!generatedResume) return;
+    try {
+      await exportResumeWord(generatedResume, formData.name || "Resume");
+      toast({ title: "Word Document Downloaded!" });
+    } catch (error) {
+      console.error("Word export error:", error);
+      toast({ title: "Error", description: "Failed to export Word document", variant: "destructive" });
+    }
+  };
+
+  const handleDownloadTxt = () => {
+    if (!generatedResume) return;
+    exportResumeTxt(generatedResume, formData.name || "Resume");
+    toast({ title: "Text File Downloaded!" });
   };
 
   if (isGenerating) {
@@ -357,23 +418,54 @@ export default function ResumeBuilder() {
     );
   }
 
+  // Show loading while checking for saved resume
+  if (isLoadingSaved && !hasLoadedSaved) {
+    return (
+      <DashboardLayout userType="welder">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-4">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+            <p className="text-muted-foreground">Loading your resume...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (generatedResume) {
+    const lastUpdated = savedResume?.updated_at 
+      ? new Date(savedResume.updated_at).toLocaleDateString()
+      : null;
+      
     return (
       <DashboardLayout userType="welder">
         <div className="p-4 lg:p-8 max-w-6xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center shadow-lg">
                 <FileText className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Your Resume is Ready!</h1>
-                <p className="text-sm text-muted-foreground">Review and download your professional resume</p>
+                <p className="text-sm text-muted-foreground">
+                  {lastUpdated ? `Last saved: ${lastUpdated}` : "Review and download your professional resume"}
+                </p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => setGeneratedResume(null)}>
-              Edit & Regenerate
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setGeneratedResume(null)}>
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Edit Details
+              </Button>
+              <Button 
+                variant="secondary" 
+                onClick={handleGenerate}
+                disabled={isGenerating}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Regenerate
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -406,13 +498,45 @@ export default function ResumeBuilder() {
                   <CardTitle>Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button className="w-full" onClick={copyToClipboard}>
+                  <Button 
+                    className="w-full" 
+                    onClick={handleSaveResume}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    {isSaving ? "Saving..." : "Save Resume"}
+                  </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full">
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-48">
+                      <DropdownMenuItem onClick={handleDownloadPDF}>
+                        <FileDown className="w-4 h-4 mr-2" />
+                        Download as PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDownloadWord}>
+                        <File className="w-4 h-4 mr-2" />
+                        Download as Word
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDownloadTxt}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Download as TXT
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button variant="ghost" className="w-full" onClick={copyToClipboard}>
                     {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
                     {copied ? "Copied!" : "Copy to Clipboard"}
-                  </Button>
-                  <Button variant="outline" className="w-full" onClick={downloadAsTxt}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Download as TXT
                   </Button>
                 </CardContent>
               </Card>
