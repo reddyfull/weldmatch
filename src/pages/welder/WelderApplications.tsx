@@ -96,7 +96,7 @@ export default function WelderApplications() {
             pay_max,
             pay_type,
             job_type,
-            employer:employer_profiles (
+            employer:employer_profiles_public (
               company_name,
               logo_url
             )

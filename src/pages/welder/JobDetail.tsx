@@ -127,12 +127,12 @@ export default function JobDetail() {
     try {
       setLoading(true);
 
-      // Fetch job with employer info
+      // Fetch job with employer info (use public view - non-owners can't read employer_profiles)
       const { data: jobData, error: jobError } = await supabase
         .from('jobs')
         .select(`
           *,
-          employer_profiles (
+          employer_profiles:employer_profiles_public (
             id,
             company_name,
             logo_url,

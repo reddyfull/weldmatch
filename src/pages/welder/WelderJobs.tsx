@@ -147,11 +147,12 @@ export default function WelderJobs() {
       setLoading(true);
 
       // Fetch active jobs with employer info
+      // Use public view for employer data (non-owners can't read employer_profiles directly)
       const { data: jobsData, error: jobsError } = await supabase
         .from('jobs')
         .select(`
           *,
-          employer_profiles (
+          employer_profiles:employer_profiles_public (
             id,
             company_name,
             logo_url

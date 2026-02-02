@@ -451,10 +451,10 @@ export async function getJobMatchScore(
     .eq('welder_id', welderId)
     .eq('verification_status', 'verified');
 
-  // Fetch job data with employer profile
+  // Fetch job data with employer profile (use public view for non-owners)
   const { data: job } = await supabase
     .from('jobs')
-    .select('*, employer_profiles(company_name)')
+    .select('*, employer_profiles:employer_profiles_public(company_name)')
     .eq('id', jobId)
     .single();
 
@@ -494,10 +494,10 @@ export async function getJobMatchScore(
  * Process new job posting - find and notify matching welders
  */
 export async function processNewJobPosting(jobId: string): Promise<void> {
-  // Fetch job data with employer profile
+  // Fetch job data with employer profile (use public view)
   const { data: job } = await supabase
     .from('jobs')
-    .select('*, employer_profiles(company_name)')
+    .select('*, employer_profiles:employer_profiles_public(company_name)')
     .eq('id', jobId)
     .single();
 
