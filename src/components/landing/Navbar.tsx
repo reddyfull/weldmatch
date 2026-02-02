@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Flame } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, loading } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-sm border-b border-white/10">
@@ -35,12 +37,20 @@ export function Navbar() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" className="text-white hover:bg-white/10" asChild>
-              <Link to="/login">Sign In</Link>
-            </Button>
-            <Button variant="hero" asChild>
-              <Link to="/register/welder">Get Started</Link>
-            </Button>
+            {!loading && user ? (
+              <Button variant="hero" asChild>
+                <Link to="/dashboard">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" className="text-white hover:bg-white/10" asChild>
+                  <Link to="/login">Sign In</Link>
+                </Button>
+                <Button variant="hero" asChild>
+                  <Link to="/register/welder">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -78,12 +88,20 @@ export function Navbar() {
                 Contact
               </Link>
               <div className="flex flex-col gap-3 pt-4 border-t border-white/10">
-                <Button variant="ghost" className="text-white hover:bg-white/10 w-full" asChild>
-                  <Link to="/login">Sign In</Link>
-                </Button>
-                <Button variant="hero" className="w-full" asChild>
-                  <Link to="/register/welder">Get Started</Link>
-                </Button>
+                {!loading && user ? (
+                  <Button variant="hero" className="w-full" asChild>
+                    <Link to="/dashboard" onClick={() => setIsOpen(false)}>Go to Dashboard</Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="ghost" className="text-white hover:bg-white/10 w-full" asChild>
+                      <Link to="/login" onClick={() => setIsOpen(false)}>Sign In</Link>
+                    </Button>
+                    <Button variant="hero" className="w-full" asChild>
+                      <Link to="/register/welder" onClick={() => setIsOpen(false)}>Get Started</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
