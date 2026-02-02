@@ -287,7 +287,7 @@ export default function ProfileSettings() {
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
                   <div className="flex-shrink-0 text-muted-foreground bg-muted px-3 py-2 rounded-l-md border border-r-0">
-                    weldmatch.com/w/
+                    weldmatch.app/w/
                   </div>
                   <div className="flex-1 relative">
                     <Input
