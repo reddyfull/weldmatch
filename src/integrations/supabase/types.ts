@@ -1378,6 +1378,7 @@ export type Database = {
         Args: { _welder_id: string }
         Returns: number
       }
+      can_view_profile: { Args: { _profile_id: string }; Returns: boolean }
       check_username_available: { Args: { p_username: string }; Returns: Json }
       get_audit_log: {
         Args: {
