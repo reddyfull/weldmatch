@@ -33,6 +33,8 @@ import WelderAIChatAssistant from "./pages/welder/AIChatAssistant";
 import ResumeBuilder from "./pages/welder/ResumeBuilder";
 import CoverLetterGenerator from "./pages/welder/CoverLetterGenerator";
 import WelderMarketIntelligence from "./pages/welder/MarketIntelligence";
+import PublicProfile from "./pages/welder/PublicProfile";
+import ProfileSettings from "./pages/welder/ProfileSettings";
 
 // Employer Pages
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
@@ -94,6 +96,10 @@ const App = () => (
             <Route path="/welder/resume-builder" element={<ResumeBuilder />} />
             <Route path="/welder/cover-letter" element={<CoverLetterGenerator />} />
             <Route path="/welder/market-intelligence" element={<WelderMarketIntelligence />} />
+            <Route path="/welder/profile/settings" element={<ProfileSettings />} />
+            
+            {/* Public Welder Profile */}
+            <Route path="/w/:username" element={<PublicProfile />} />
             
             {/* Employer Routes */}
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />

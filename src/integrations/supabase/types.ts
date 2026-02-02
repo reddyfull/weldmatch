@@ -673,6 +673,44 @@ export type Database = {
           },
         ]
       }
+      profile_access_logs: {
+        Row: {
+          access_type: string
+          accessed_at: string | null
+          id: string
+          referrer: string | null
+          viewer_ip: string | null
+          viewer_user_agent: string | null
+          welder_id: string
+        }
+        Insert: {
+          access_type: string
+          accessed_at?: string | null
+          id?: string
+          referrer?: string | null
+          viewer_ip?: string | null
+          viewer_user_agent?: string | null
+          welder_id: string
+        }
+        Update: {
+          access_type?: string
+          accessed_at?: string | null
+          id?: string
+          referrer?: string | null
+          viewer_ip?: string | null
+          viewer_user_agent?: string | null
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_access_logs_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: false
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_strength_results: {
         Row: {
           certifications_snapshot: string[] | null
@@ -801,6 +839,47 @@ export type Database = {
         }
         Relationships: []
       }
+      welder_equipment: {
+        Row: {
+          brand: string | null
+          created_at: string | null
+          equipment_type: string
+          id: string
+          model: string | null
+          owned: boolean | null
+          proficiency: string | null
+          welder_id: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string | null
+          equipment_type: string
+          id?: string
+          model?: string | null
+          owned?: boolean | null
+          proficiency?: string | null
+          welder_id: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string | null
+          equipment_type?: string
+          id?: string
+          model?: string | null
+          owned?: boolean | null
+          proficiency?: string | null
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "welder_equipment_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: false
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       welder_job_interactions: {
         Row: {
           clicked_apply_at: string | null
@@ -870,13 +949,68 @@ export type Database = {
           },
         ]
       }
+      welder_portfolio_items: {
+        Row: {
+          created_at: string | null
+          date_completed: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          project_type: string | null
+          title: string
+          updated_at: string | null
+          video_url: string | null
+          welder_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date_completed?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          project_type?: string | null
+          title: string
+          updated_at?: string | null
+          video_url?: string | null
+          welder_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date_completed?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          project_type?: string | null
+          title?: string
+          updated_at?: string | null
+          video_url?: string | null
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "welder_portfolio_items_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: false
+            referencedRelation: "welder_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       welder_profiles: {
         Row: {
+          available_date: string | null
           background_check_encrypted: string | null
           bank_account_encrypted: string | null
           bank_routing_encrypted: string | null
           bio: string | null
           city: string | null
+          cover_photo_url: string | null
           created_at: string | null
           desired_salary_max: number | null
           desired_salary_min: number | null
@@ -884,33 +1018,53 @@ export type Database = {
           drivers_license_encrypted: string | null
           drug_test_encrypted: string | null
           emergency_phone_encrypted: string | null
+          highlights: string[] | null
           home_address_encrypted: string | null
           id: string
+          instagram_url: string | null
           is_available: boolean | null
           lat: number | null
+          linkedin_url: string | null
           lng: number | null
+          looking_for_work: boolean | null
           medical_info_encrypted: string | null
+          minimum_hourly_rate: number | null
+          open_to_opportunities: boolean | null
           passport_number_encrypted: string | null
           phone_personal_encrypted: string | null
+          professional_title: string | null
           profile_completion: number | null
+          profile_views: number | null
+          profile_visibility: string | null
+          rate_negotiable: boolean | null
+          relocation_preferences: string[] | null
           salary_type: Database["public"]["Enums"]["salary_type"] | null
+          show_email: boolean | null
+          show_phone: boolean | null
           ssn_encrypted: string | null
           state: string | null
+          tagline: string | null
           tax_id_encrypted: string | null
+          travel_scope: string | null
           updated_at: string | null
           user_id: string
+          username: string | null
           weld_positions: string[] | null
           weld_processes: string[] | null
+          willing_to_relocate: boolean | null
           willing_to_travel: boolean | null
+          work_types: string[] | null
           years_experience: number | null
           zip_code: string | null
         }
         Insert: {
+          available_date?: string | null
           background_check_encrypted?: string | null
           bank_account_encrypted?: string | null
           bank_routing_encrypted?: string | null
           bio?: string | null
           city?: string | null
+          cover_photo_url?: string | null
           created_at?: string | null
           desired_salary_max?: number | null
           desired_salary_min?: number | null
@@ -918,33 +1072,53 @@ export type Database = {
           drivers_license_encrypted?: string | null
           drug_test_encrypted?: string | null
           emergency_phone_encrypted?: string | null
+          highlights?: string[] | null
           home_address_encrypted?: string | null
           id?: string
+          instagram_url?: string | null
           is_available?: boolean | null
           lat?: number | null
+          linkedin_url?: string | null
           lng?: number | null
+          looking_for_work?: boolean | null
           medical_info_encrypted?: string | null
+          minimum_hourly_rate?: number | null
+          open_to_opportunities?: boolean | null
           passport_number_encrypted?: string | null
           phone_personal_encrypted?: string | null
+          professional_title?: string | null
           profile_completion?: number | null
+          profile_views?: number | null
+          profile_visibility?: string | null
+          rate_negotiable?: boolean | null
+          relocation_preferences?: string[] | null
           salary_type?: Database["public"]["Enums"]["salary_type"] | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
           ssn_encrypted?: string | null
           state?: string | null
+          tagline?: string | null
           tax_id_encrypted?: string | null
+          travel_scope?: string | null
           updated_at?: string | null
           user_id: string
+          username?: string | null
           weld_positions?: string[] | null
           weld_processes?: string[] | null
+          willing_to_relocate?: boolean | null
           willing_to_travel?: boolean | null
+          work_types?: string[] | null
           years_experience?: number | null
           zip_code?: string | null
         }
         Update: {
+          available_date?: string | null
           background_check_encrypted?: string | null
           bank_account_encrypted?: string | null
           bank_routing_encrypted?: string | null
           bio?: string | null
           city?: string | null
+          cover_photo_url?: string | null
           created_at?: string | null
           desired_salary_max?: number | null
           desired_salary_min?: number | null
@@ -952,24 +1126,42 @@ export type Database = {
           drivers_license_encrypted?: string | null
           drug_test_encrypted?: string | null
           emergency_phone_encrypted?: string | null
+          highlights?: string[] | null
           home_address_encrypted?: string | null
           id?: string
+          instagram_url?: string | null
           is_available?: boolean | null
           lat?: number | null
+          linkedin_url?: string | null
           lng?: number | null
+          looking_for_work?: boolean | null
           medical_info_encrypted?: string | null
+          minimum_hourly_rate?: number | null
+          open_to_opportunities?: boolean | null
           passport_number_encrypted?: string | null
           phone_personal_encrypted?: string | null
+          professional_title?: string | null
           profile_completion?: number | null
+          profile_views?: number | null
+          profile_visibility?: string | null
+          rate_negotiable?: boolean | null
+          relocation_preferences?: string[] | null
           salary_type?: Database["public"]["Enums"]["salary_type"] | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
           ssn_encrypted?: string | null
           state?: string | null
+          tagline?: string | null
           tax_id_encrypted?: string | null
+          travel_scope?: string | null
           updated_at?: string | null
           user_id?: string
+          username?: string | null
           weld_positions?: string[] | null
           weld_processes?: string[] | null
+          willing_to_relocate?: boolean | null
           willing_to_travel?: boolean | null
+          work_types?: string[] | null
           years_experience?: number | null
           zip_code?: string | null
         }
@@ -979,6 +1171,62 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      welder_work_experience: {
+        Row: {
+          company_name: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          end_date: string | null
+          highlights: string[] | null
+          id: string
+          is_current: boolean | null
+          job_title: string
+          location: string | null
+          start_date: string
+          updated_at: string | null
+          welder_id: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          highlights?: string[] | null
+          id?: string
+          is_current?: boolean | null
+          job_title: string
+          location?: string | null
+          start_date: string
+          updated_at?: string | null
+          welder_id: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          highlights?: string[] | null
+          id?: string
+          is_current?: boolean | null
+          job_title?: string
+          location?: string | null
+          start_date?: string
+          updated_at?: string | null
+          welder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "welder_work_experience_welder_id_fkey"
+            columns: ["welder_id"]
+            isOneToOne: false
+            referencedRelation: "welder_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1027,6 +1275,7 @@ export type Database = {
         Args: { _welder_id: string }
         Returns: number
       }
+      check_username_available: { Args: { p_username: string }; Returns: Json }
       get_audit_log: {
         Args: {
           p_action?: string
@@ -1047,6 +1296,13 @@ export type Database = {
           table_name: string
           user_agent: string
           user_id: string
+        }[]
+      }
+      get_public_profile: {
+        Args: { p_username: string }
+        Returns: {
+          is_public: boolean
+          profile_data: Json
         }[]
       }
       get_user_type: {
