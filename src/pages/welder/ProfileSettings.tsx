@@ -14,8 +14,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useWelderProfile, useUserProfile, useUpdateWelderProfile } from "@/hooks/useUserProfile";
+import { useWelderProfile, useUserProfile, useUpdateWelderProfile, useUpdateProfile } from "@/hooks/useUserProfile";
 import { useCheckUsername, useClaimUsername, useProfileAnalytics } from "@/hooks/usePublicProfile";
+import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
 import {
   User,
   Link as LinkIcon,
@@ -40,6 +41,8 @@ import {
   Linkedin,
   Clock,
   AlertCircle,
+  ImageIcon,
+  Palette,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -270,25 +273,106 @@ export default function ProfileSettings() {
           )}
         </div>
 
-        <Tabs defaultValue="url" className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full">
+        <Tabs defaultValue="appearance" className="space-y-6">
+          <TabsList className="grid grid-cols-5 w-full">
+            <TabsTrigger value="appearance">
+              <Palette className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Appearance</span>
+            </TabsTrigger>
             <TabsTrigger value="url">
               <LinkIcon className="w-4 h-4 mr-2" />
-              URL
+              <span className="hidden sm:inline">URL</span>
             </TabsTrigger>
             <TabsTrigger value="visibility">
               <Eye className="w-4 h-4 mr-2" />
-              Visibility
+              <span className="hidden sm:inline">Visibility</span>
             </TabsTrigger>
             <TabsTrigger value="details">
               <User className="w-4 h-4 mr-2" />
-              Details
+              <span className="hidden sm:inline">Details</span>
             </TabsTrigger>
             <TabsTrigger value="analytics">
               <BarChart3 className="w-4 h-4 mr-2" />
-              Analytics
+              <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Appearance Tab */}
+          <TabsContent value="appearance" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-primary" />
+                  Profile Photo
+                </CardTitle>
+                <CardDescription>
+                  Upload a professional photo to make a great first impression
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-6">
+                  <ProfileImageUpload
+                    userId={user?.id || ""}
+                    currentUrl={profile?.avatar_url || null}
+                    onUploadComplete={async (url) => {
+                      if (!user?.id) return;
+                      const { error } = await supabase
+                        .from("profiles")
+                        .update({ avatar_url: url })
+                        .eq("id", user.id);
+                      if (error) {
+                        toast.error("Failed to update avatar");
+                      }
+                    }}
+                    type="avatar"
+                    name={profile?.full_name || ""}
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-medium mb-1">Profile Photo</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Recommended: Square image, at least 200x200px
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Click on the image to upload a new photo
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-primary" />
+                  Banner Image
+                </CardTitle>
+                <CardDescription>
+                  Add a cover photo to personalize your public profile page
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProfileImageUpload
+                  userId={user?.id || ""}
+                  currentUrl={(welderProfile as any)?.cover_photo_url || null}
+                  onUploadComplete={async (url) => {
+                    if (!welderProfile?.id) return;
+                    const { error } = await supabase
+                      .from("welder_profiles")
+                      .update({ cover_photo_url: url })
+                      .eq("id", welderProfile.id);
+                    if (error) {
+                      toast.error("Failed to update banner");
+                    }
+                  }}
+                  type="banner"
+                  name={profile?.full_name || ""}
+                />
+                <p className="text-xs text-muted-foreground mt-3">
+                  Recommended size: 1920x480 pixels. Show off your welding work or workspace!
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* URL Tab */}
           <TabsContent value="url" className="space-y-6">
