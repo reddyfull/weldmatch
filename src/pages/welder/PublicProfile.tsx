@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { usePublicProfile, useLogProfileAccess, calculateProfileCompleteness } from "@/hooks/usePublicProfile";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,49 +52,67 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 
-// Hero Section Component - Modern glassmorphism design
+// Hero Section Component - Modern glassmorphism design with parallax
 function HeroSection({ profile }: { profile: any }) {
   const welderProfile = profile.welder_profile;
   const userProfile = profile.profile;
+  
+  // Parallax scroll effect
+  const { scrollY } = useScroll();
+  const backgroundY = useTransform(scrollY, [0, 500], [0, 150]);
+  const opacity = useTransform(scrollY, [0, 300], [1, 0.3]);
 
   return (
-    <div className="relative">
-      {/* Cover Photo with enhanced gradient overlay */}
+    <div className="relative overflow-hidden">
+      {/* Cover Photo with parallax effect */}
       <motion.div 
         className="h-64 sm:h-80 lg:h-96 relative overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
-        style={welderProfile.cover_photo_url ? {
-          backgroundImage: `url(${welderProfile.cover_photo_url})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        } : undefined}
       >
-        {!welderProfile.cover_photo_url && (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent">
-            <div className="absolute inset-0 opacity-20">
-              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <defs>
-                  <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5" opacity="0.3"/>
-                  </pattern>
-                </defs>
-                <rect width="100" height="100" fill="url(#grid)" />
-              </svg>
+        {/* Parallax background layer */}
+        <motion.div
+          className="absolute inset-0 -top-20 -bottom-20"
+          style={{ 
+            y: backgroundY,
+            backgroundImage: welderProfile.cover_photo_url 
+              ? `url(${welderProfile.cover_photo_url})`
+              : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          {!welderProfile.cover_photo_url && (
+            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent">
+              <div className="absolute inset-0 opacity-20">
+                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  <defs>
+                    <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5" opacity="0.3"/>
+                    </pattern>
+                  </defs>
+                  <rect width="100" height="100" fill="url(#grid)" />
+                </svg>
+              </div>
+              <motion.div 
+                className="absolute right-0 bottom-0 w-96 h-96 opacity-10"
+                initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+                animate={{ opacity: 0.1, scale: 1, rotate: 0 }}
+                transition={{ duration: 1.2, delay: 0.3 }}
+                style={{ y: useTransform(scrollY, [0, 500], [0, -50]) }}
+              >
+                <Flame className="w-full h-full text-white" />
+              </motion.div>
             </div>
-            <motion.div 
-              className="absolute right-0 bottom-0 w-96 h-96 opacity-10"
-              initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
-              animate={{ opacity: 0.1, scale: 1, rotate: 0 }}
-              transition={{ duration: 1.2, delay: 0.3 }}
-            >
-              <Flame className="w-full h-full text-white" />
-            </motion.div>
-          </div>
-        )}
-        {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+          )}
+        </motion.div>
+        
+        {/* Gradient overlays with subtle parallax */}
+        <motion.div 
+          className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" 
+          style={{ opacity }}
+        />
         <div className="absolute inset-0 bg-gradient-to-r from-background/30 to-transparent" />
       </motion.div>
 
