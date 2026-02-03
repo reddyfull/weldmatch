@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.send-trial-expiration-reminder]
 verify_jwt = false
+
+[functions.get-public-employers]
+verify_jwt = false
