@@ -125,6 +125,19 @@ export default function ProfileSettings() {
       return;
     }
 
+    // Validate format before calling API
+    if (debouncedUsername.length < 3) {
+      setUsernameStatus("unavailable");
+      setUsernameError("Username must be at least 3 characters");
+      return;
+    }
+
+    if (debouncedUsername.startsWith("-") || debouncedUsername.endsWith("-")) {
+      setUsernameStatus("unavailable");
+      setUsernameError("Username cannot start or end with a hyphen");
+      return;
+    }
+
     setUsernameStatus("checking");
     checkUsername.mutate(debouncedUsername, {
       onSuccess: (result) => {
@@ -136,12 +149,14 @@ export default function ProfileSettings() {
           setUsernameError(result.reason || "Username not available");
         }
       },
-      onError: () => {
+      onError: (err) => {
+        console.error("Username check error:", err);
         setUsernameStatus("unavailable");
         setUsernameError("Error checking username");
       },
     });
-  }, [debouncedUsername, welderProfile, checkUsername]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedUsername, welderProfile?.id]);
 
   const handleClaimUsername = async () => {
     if (usernameStatus !== "available") return;
