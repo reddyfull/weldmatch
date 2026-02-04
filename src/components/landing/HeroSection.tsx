@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, Target, Award } from "lucide-react";
+import { motion } from "framer-motion";
 import heroImage from "@/assets/hero-welding.jpg";
+import { SparkParticles, WeldingArc } from "./SparkParticles";
 
 export function HeroSection() {
   return (
@@ -16,6 +18,13 @@ export function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/85 to-primary/70" />
         <div className="absolute inset-0 pattern-industrial" />
       </div>
+
+      {/* Floating Spark Particles */}
+      <SparkParticles count={25} className="z-[5]" />
+      
+      {/* Welding Arc Effects */}
+      <WeldingArc className="bottom-20 right-[15%] hidden lg:block" />
+      <WeldingArc className="bottom-32 right-[25%] hidden lg:block" />
 
       {/* Content */}
       <div className="container mx-auto px-4 relative z-10">
