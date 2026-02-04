@@ -376,9 +376,7 @@ export default function WelderProfileEdit() {
           <CardContent className="space-y-6">
             <CertificationsList 
               welderId={welderProfile.id} 
-              onCertificationsChange={() => {
-                // Could refresh profile completion here if needed
-              }}
+              onCertificationsChange={() => {}}
             />
             <div className="border-t pt-6">
               <CertificationUpload 

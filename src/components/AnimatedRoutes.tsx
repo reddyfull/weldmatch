@@ -1,64 +1,84 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { PageTransition } from "@/components/ui/page-transition";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 
-// Public Pages
+// Loading component for lazy-loaded routes
+const RouteLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
+
+// Public Pages - Keep Index eager for fast initial load
 import Index from "@/pages/Index";
-import Login from "@/pages/Login";
-import RegisterWelder from "@/pages/RegisterWelder";
-import RegisterEmployer from "@/pages/RegisterEmployer";
-import Pricing from "@/pages/Pricing";
-import NotFound from "@/pages/NotFound";
+
+// Lazy load all other pages for code splitting
+const Login = lazy(() => import("@/pages/Login"));
+const RegisterWelder = lazy(() => import("@/pages/RegisterWelder"));
+const RegisterEmployer = lazy(() => import("@/pages/RegisterEmployer"));
+const Pricing = lazy(() => import("@/pages/Pricing"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
 
 // Post-Login Flow
-import PostLoginRouter from "@/pages/PostLoginRouter";
-import ChooseRole from "@/pages/ChooseRole";
+const PostLoginRouter = lazy(() => import("@/pages/PostLoginRouter"));
+const ChooseRole = lazy(() => import("@/pages/ChooseRole"));
 
 // Welder Pages
-import WelderDashboard from "@/pages/welder/WelderDashboard";
-import WelderProfileSetup from "@/pages/welder/WelderProfileSetup";
-import WelderProfileEdit from "@/pages/welder/WelderProfileEdit";
-import WelderDocuments from "@/pages/welder/WelderDocuments";
-import WelderApplications from "@/pages/welder/WelderApplications";
-import WelderJobs from "@/pages/welder/WelderJobs";
-import JobDetail from "@/pages/welder/JobDetail";
-import CareerCoach from "@/pages/welder/CareerCoach";
-import WeldAnalyzer from "@/pages/welder/WeldAnalyzer";
-import InterviewCoach from "@/pages/welder/InterviewCoach";
-import CareerPathPredictor from "@/pages/welder/CareerPathPredictor";
-import WelderAIChatAssistant from "@/pages/welder/AIChatAssistant";
-import ResumeBuilder from "@/pages/welder/ResumeBuilder";
-import CoverLetterGenerator from "@/pages/welder/CoverLetterGenerator";
-import WelderMarketIntelligence from "@/pages/welder/MarketIntelligence";
-import PublicProfile from "@/pages/welder/PublicProfile";
-import ProfileSettings from "@/pages/welder/ProfileSettings";
+const WelderDashboard = lazy(() => import("@/pages/welder/WelderDashboard"));
+const WelderProfileSetup = lazy(() => import("@/pages/welder/WelderProfileSetup"));
+const WelderProfileEdit = lazy(() => import("@/pages/welder/WelderProfileEdit"));
+const WelderDocuments = lazy(() => import("@/pages/welder/WelderDocuments"));
+const WelderApplications = lazy(() => import("@/pages/welder/WelderApplications"));
+const WelderJobs = lazy(() => import("@/pages/welder/WelderJobs"));
+const JobDetail = lazy(() => import("@/pages/welder/JobDetail"));
+const CareerCoach = lazy(() => import("@/pages/welder/CareerCoach"));
+const WeldAnalyzer = lazy(() => import("@/pages/welder/WeldAnalyzer"));
+const InterviewCoach = lazy(() => import("@/pages/welder/InterviewCoach"));
+const CareerPathPredictor = lazy(() => import("@/pages/welder/CareerPathPredictor"));
+const WelderAIChatAssistant = lazy(() => import("@/pages/welder/AIChatAssistant"));
+const ResumeBuilder = lazy(() => import("@/pages/welder/ResumeBuilder"));
+const CoverLetterGenerator = lazy(() => import("@/pages/welder/CoverLetterGenerator"));
+const WelderMarketIntelligence = lazy(() => import("@/pages/welder/MarketIntelligence"));
+const PublicProfile = lazy(() => import("@/pages/welder/PublicProfile"));
+const ProfileSettings = lazy(() => import("@/pages/welder/ProfileSettings"));
 
 // Employer Pages
-import EmployerDashboard from "@/pages/employer/EmployerDashboard";
-import EmployerProfileSetup from "@/pages/employer/EmployerProfileSetup";
-import EmployerProfileEdit from "@/pages/employer/EmployerProfileEdit";
-import EmployerJobs from "@/pages/employer/EmployerJobs";
-import EmployerCandidates from "@/pages/employer/EmployerCandidates";
-import JobPostingForm from "@/pages/employer/JobPostingForm";
-import EmployerSettings from "@/pages/employer/EmployerSettings";
-import CrewOptimizer from "@/pages/employer/CrewOptimizer";
-import SafetyMonitor from "@/pages/employer/SafetyMonitor";
-import EmployerAIChatAssistant from "@/pages/employer/AIChatAssistant";
-import CandidateOutreach from "@/pages/employer/CandidateOutreach";
-import EmployerMarketIntelligence from "@/pages/employer/MarketIntelligence";
+const EmployerDashboard = lazy(() => import("@/pages/employer/EmployerDashboard"));
+const EmployerProfileSetup = lazy(() => import("@/pages/employer/EmployerProfileSetup"));
+const EmployerProfileEdit = lazy(() => import("@/pages/employer/EmployerProfileEdit"));
+const EmployerJobs = lazy(() => import("@/pages/employer/EmployerJobs"));
+const EmployerCandidates = lazy(() => import("@/pages/employer/EmployerCandidates"));
+const JobPostingForm = lazy(() => import("@/pages/employer/JobPostingForm"));
+const EmployerSettings = lazy(() => import("@/pages/employer/EmployerSettings"));
+const CrewOptimizer = lazy(() => import("@/pages/employer/CrewOptimizer"));
+const SafetyMonitor = lazy(() => import("@/pages/employer/SafetyMonitor"));
+const EmployerAIChatAssistant = lazy(() => import("@/pages/employer/AIChatAssistant"));
+const CandidateOutreach = lazy(() => import("@/pages/employer/CandidateOutreach"));
+const EmployerMarketIntelligence = lazy(() => import("@/pages/employer/MarketIntelligence"));
 
 // Admin Pages
-import AdminCertifications from "@/pages/admin/AdminCertifications";
-import AdminUsers from "@/pages/admin/AdminUsers";
-import AdminPayments from "@/pages/admin/AdminPayments";
-import AdminAuditLog from "@/pages/admin/AdminAuditLog";
+const AdminCertifications = lazy(() => import("@/pages/admin/AdminCertifications"));
+const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
+const AdminPayments = lazy(() => import("@/pages/admin/AdminPayments"));
+const AdminAuditLog = lazy(() => import("@/pages/admin/AdminAuditLog"));
 
 // Demo Pages
-import EncryptionDemo from "@/pages/demo/EncryptionDemo";
+const EncryptionDemo = lazy(() => import("@/pages/demo/EncryptionDemo"));
 
 // Wrapper component to add transition to each page
 function AnimatedPage({ children }: { children: React.ReactNode }) {
   return <PageTransition>{children}</PageTransition>;
+}
+
+// Wrapper for lazy-loaded pages with suspense
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<RouteLoader />}>
+      <PageTransition>{children}</PageTransition>
+    </Suspense>
+  );
 }
 
 export default function AnimatedRoutes() {
@@ -67,64 +87,64 @@ export default function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
-        {/* Public Routes */}
+        {/* Public Routes - Index is eager loaded for fast initial paint */}
         <Route path="/" element={<AnimatedPage><Index /></AnimatedPage>} />
-        <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
-        <Route path="/pricing" element={<AnimatedPage><Pricing /></AnimatedPage>} />
-        <Route path="/register/welder" element={<AnimatedPage><RegisterWelder /></AnimatedPage>} />
-        <Route path="/register/employer" element={<AnimatedPage><RegisterEmployer /></AnimatedPage>} />
+        <Route path="/login" element={<LazyPage><Login /></LazyPage>} />
+        <Route path="/pricing" element={<LazyPage><Pricing /></LazyPage>} />
+        <Route path="/register/welder" element={<LazyPage><RegisterWelder /></LazyPage>} />
+        <Route path="/register/employer" element={<LazyPage><RegisterEmployer /></LazyPage>} />
         
         {/* Post-Login Flow */}
-        <Route path="/dashboard" element={<AnimatedPage><PostLoginRouter /></AnimatedPage>} />
-        <Route path="/choose-role" element={<AnimatedPage><ChooseRole /></AnimatedPage>} />
+        <Route path="/dashboard" element={<LazyPage><PostLoginRouter /></LazyPage>} />
+        <Route path="/choose-role" element={<LazyPage><ChooseRole /></LazyPage>} />
         
         {/* Welder Routes */}
-        <Route path="/welder/dashboard" element={<AnimatedPage><WelderDashboard /></AnimatedPage>} />
-        <Route path="/welder/profile/setup" element={<AnimatedPage><WelderProfileSetup /></AnimatedPage>} />
-        <Route path="/welder/profile/edit" element={<AnimatedPage><WelderProfileEdit /></AnimatedPage>} />
-        <Route path="/welder/documents" element={<AnimatedPage><WelderDocuments /></AnimatedPage>} />
-        <Route path="/welder/applications" element={<AnimatedPage><WelderApplications /></AnimatedPage>} />
-        <Route path="/welder/jobs" element={<AnimatedPage><WelderJobs /></AnimatedPage>} />
-        <Route path="/welder/jobs/:jobId" element={<AnimatedPage><JobDetail /></AnimatedPage>} />
-        <Route path="/welder/career-coach" element={<AnimatedPage><CareerCoach /></AnimatedPage>} />
-        <Route path="/welder/weld-analyzer" element={<AnimatedPage><WeldAnalyzer /></AnimatedPage>} />
-        <Route path="/welder/interview-coach" element={<AnimatedPage><InterviewCoach /></AnimatedPage>} />
-        <Route path="/welder/career-path" element={<AnimatedPage><CareerPathPredictor /></AnimatedPage>} />
-        <Route path="/welder/chat" element={<AnimatedPage><WelderAIChatAssistant /></AnimatedPage>} />
-        <Route path="/welder/resume-builder" element={<AnimatedPage><ResumeBuilder /></AnimatedPage>} />
-        <Route path="/welder/cover-letter" element={<AnimatedPage><CoverLetterGenerator /></AnimatedPage>} />
-        <Route path="/welder/market-intelligence" element={<AnimatedPage><WelderMarketIntelligence /></AnimatedPage>} />
-        <Route path="/welder/profile/settings" element={<AnimatedPage><ProfileSettings /></AnimatedPage>} />
+        <Route path="/welder/dashboard" element={<LazyPage><WelderDashboard /></LazyPage>} />
+        <Route path="/welder/profile/setup" element={<LazyPage><WelderProfileSetup /></LazyPage>} />
+        <Route path="/welder/profile/edit" element={<LazyPage><WelderProfileEdit /></LazyPage>} />
+        <Route path="/welder/documents" element={<LazyPage><WelderDocuments /></LazyPage>} />
+        <Route path="/welder/applications" element={<LazyPage><WelderApplications /></LazyPage>} />
+        <Route path="/welder/jobs" element={<LazyPage><WelderJobs /></LazyPage>} />
+        <Route path="/welder/jobs/:jobId" element={<LazyPage><JobDetail /></LazyPage>} />
+        <Route path="/welder/career-coach" element={<LazyPage><CareerCoach /></LazyPage>} />
+        <Route path="/welder/weld-analyzer" element={<LazyPage><WeldAnalyzer /></LazyPage>} />
+        <Route path="/welder/interview-coach" element={<LazyPage><InterviewCoach /></LazyPage>} />
+        <Route path="/welder/career-path" element={<LazyPage><CareerPathPredictor /></LazyPage>} />
+        <Route path="/welder/chat" element={<LazyPage><WelderAIChatAssistant /></LazyPage>} />
+        <Route path="/welder/resume-builder" element={<LazyPage><ResumeBuilder /></LazyPage>} />
+        <Route path="/welder/cover-letter" element={<LazyPage><CoverLetterGenerator /></LazyPage>} />
+        <Route path="/welder/market-intelligence" element={<LazyPage><WelderMarketIntelligence /></LazyPage>} />
+        <Route path="/welder/profile/settings" element={<LazyPage><ProfileSettings /></LazyPage>} />
         
         {/* Public Welder Profile */}
-        <Route path="/w/:username" element={<AnimatedPage><PublicProfile /></AnimatedPage>} />
+        <Route path="/w/:username" element={<LazyPage><PublicProfile /></LazyPage>} />
         
         {/* Employer Routes */}
-        <Route path="/employer/dashboard" element={<AnimatedPage><EmployerDashboard /></AnimatedPage>} />
-        <Route path="/employer/profile/setup" element={<AnimatedPage><EmployerProfileSetup /></AnimatedPage>} />
-        <Route path="/employer/profile/edit" element={<AnimatedPage><EmployerProfileEdit /></AnimatedPage>} />
-        <Route path="/employer/jobs" element={<AnimatedPage><EmployerJobs /></AnimatedPage>} />
-        <Route path="/employer/candidates" element={<AnimatedPage><EmployerCandidates /></AnimatedPage>} />
-        <Route path="/employer/jobs/new" element={<AnimatedPage><JobPostingForm /></AnimatedPage>} />
-        <Route path="/employer/settings" element={<AnimatedPage><EmployerSettings /></AnimatedPage>} />
-        <Route path="/employer/crew-optimizer" element={<AnimatedPage><CrewOptimizer /></AnimatedPage>} />
-        <Route path="/employer/safety-monitor" element={<AnimatedPage><SafetyMonitor /></AnimatedPage>} />
-        <Route path="/employer/chat" element={<AnimatedPage><EmployerAIChatAssistant /></AnimatedPage>} />
-        <Route path="/employer/outreach" element={<AnimatedPage><CandidateOutreach /></AnimatedPage>} />
-        <Route path="/employer/market-intelligence" element={<AnimatedPage><EmployerMarketIntelligence /></AnimatedPage>} />
+        <Route path="/employer/dashboard" element={<LazyPage><EmployerDashboard /></LazyPage>} />
+        <Route path="/employer/profile/setup" element={<LazyPage><EmployerProfileSetup /></LazyPage>} />
+        <Route path="/employer/profile/edit" element={<LazyPage><EmployerProfileEdit /></LazyPage>} />
+        <Route path="/employer/jobs" element={<LazyPage><EmployerJobs /></LazyPage>} />
+        <Route path="/employer/candidates" element={<LazyPage><EmployerCandidates /></LazyPage>} />
+        <Route path="/employer/jobs/new" element={<LazyPage><JobPostingForm /></LazyPage>} />
+        <Route path="/employer/settings" element={<LazyPage><EmployerSettings /></LazyPage>} />
+        <Route path="/employer/crew-optimizer" element={<LazyPage><CrewOptimizer /></LazyPage>} />
+        <Route path="/employer/safety-monitor" element={<LazyPage><SafetyMonitor /></LazyPage>} />
+        <Route path="/employer/chat" element={<LazyPage><EmployerAIChatAssistant /></LazyPage>} />
+        <Route path="/employer/outreach" element={<LazyPage><CandidateOutreach /></LazyPage>} />
+        <Route path="/employer/market-intelligence" element={<LazyPage><EmployerMarketIntelligence /></LazyPage>} />
         
         {/* Admin Routes */}
-        <Route path="/admin/certifications" element={<AnimatedPage><AdminCertifications /></AnimatedPage>} />
-        <Route path="/admin/payments" element={<AnimatedPage><AdminPayments /></AnimatedPage>} />
-        <Route path="/admin/users" element={<AnimatedPage><AdminUsers /></AnimatedPage>} />
-        <Route path="/admin/audit-log" element={<AnimatedPage><AdminAuditLog /></AnimatedPage>} />
-        <Route path="/admin/dashboard" element={<AnimatedPage><AdminCertifications /></AnimatedPage>} />
+        <Route path="/admin/certifications" element={<LazyPage><AdminCertifications /></LazyPage>} />
+        <Route path="/admin/payments" element={<LazyPage><AdminPayments /></LazyPage>} />
+        <Route path="/admin/users" element={<LazyPage><AdminUsers /></LazyPage>} />
+        <Route path="/admin/audit-log" element={<LazyPage><AdminAuditLog /></LazyPage>} />
+        <Route path="/admin/dashboard" element={<LazyPage><AdminCertifications /></LazyPage>} />
         
         {/* Demo Routes */}
-        <Route path="/demo/encryption" element={<AnimatedPage><EncryptionDemo /></AnimatedPage>} />
+        <Route path="/demo/encryption" element={<LazyPage><EncryptionDemo /></LazyPage>} />
         
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<AnimatedPage><NotFound /></AnimatedPage>} />
+        <Route path="*" element={<LazyPage><NotFound /></LazyPage>} />
       </Routes>
     </AnimatePresence>
   );

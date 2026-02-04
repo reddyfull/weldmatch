@@ -41,7 +41,6 @@ export default function EmployerSettings() {
   const { signOut, subscription, checkSubscription } = useAuth();
   const { toast } = useToast();
   
-  // Notification preferences (these would be stored in the database in a real app)
   const [emailNewApplications, setEmailNewApplications] = useState(true);
   const [emailApplicationUpdates, setEmailApplicationUpdates] = useState(true);
   const [emailWeeklyDigest, setEmailWeeklyDigest] = useState(false);

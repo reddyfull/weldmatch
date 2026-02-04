@@ -80,7 +80,7 @@ export default function WelderAIChatAssistant() {
         userContext: welderProfile ? {
           profile: {
             yearsExperience: welderProfile.years_experience || undefined,
-            certifications: [], // Would need to fetch from certifications table
+            certifications: [],
             currentTitle: "Welder",
             weldProcesses: welderProfile.weld_processes || [],
             weldPositions: welderProfile.weld_positions || [],
