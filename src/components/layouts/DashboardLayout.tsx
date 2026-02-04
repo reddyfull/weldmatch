@@ -52,8 +52,7 @@ interface DashboardLayoutProps {
 
 const welderNavItems: NavItem[] = [
   { label: "Dashboard", href: "/welder/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-  { label: "My Profile", href: "/welder/profile/edit", icon: <User className="w-5 h-5" /> },
-  { label: "Public Profile", href: "/welder/profile/settings", icon: <Globe className="w-5 h-5" /> },
+  { label: "Profile", href: "/welder/profile/edit", icon: <User className="w-5 h-5" /> },
   { label: "AI Chat", href: "/welder/chat", icon: <MessageCircle className="w-5 h-5" /> },
   { label: "Resume Builder", href: "/welder/resume-builder", icon: <FileTextIcon className="w-5 h-5" /> },
   { label: "Cover Letter", href: "/welder/cover-letter", icon: <Mail className="w-5 h-5" /> },
