@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,10 +27,32 @@ const WELD_PROCESSES = [
 const WELD_POSITIONS = ["1G", "2G", "3G", "4G", "5G", "6G"];
 
 export default function WelderProfileSetup() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const createProfile = useCreateWelderProfile();
+  
+  // Fetch existing profile to pre-fill form if returning to setup
+  const { data: existingProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ["welder_profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("welder_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   
-  // Step 1 fields
+  // Step 1 fields - initialize from existing profile if available
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [zipCode, setZipCode] = useState("");
@@ -49,11 +72,22 @@ export default function WelderProfileSetup() {
   // Temp welder ID for resume upload (will be replaced with real ID after profile creation)
   const [tempWelderId] = useState(() => crypto.randomUUID());
   
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const createProfile = useCreateWelderProfile();
+  // Pre-fill form from existing profile
+  useEffect(() => {
+    if (existingProfile) {
+      if (existingProfile.city) setCity(existingProfile.city);
+      if (existingProfile.state) setState(existingProfile.state);
+      if (existingProfile.zip_code) setZipCode(existingProfile.zip_code);
+      if (existingProfile.years_experience) setYearsExperience(existingProfile.years_experience.toString());
+      if (existingProfile.weld_processes?.length) setSelectedProcesses(existingProfile.weld_processes);
+      if (existingProfile.weld_positions?.length) setSelectedPositions(existingProfile.weld_positions);
+      if (existingProfile.desired_salary_min) setSalaryMin(existingProfile.desired_salary_min.toString());
+      if (existingProfile.desired_salary_max) setSalaryMax(existingProfile.desired_salary_max.toString());
+      if (existingProfile.salary_type) setSalaryType(existingProfile.salary_type);
+      if (existingProfile.willing_to_travel) setWillingToTravel(existingProfile.willing_to_travel);
+      if (existingProfile.bio) setBio(existingProfile.bio);
+    }
+  }, [existingProfile]);
 
   // Handler for when resume suggestions are ready
   const handleResumeSuggestions = (suggestions: ProfileSuggestions) => {

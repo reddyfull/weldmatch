@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,6 @@ export default function WelderDashboard() {
   const { user, loading: authLoading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useUserProfile();
   const { data: welderProfile, isLoading: welderLoading } = useWelderProfile();
-  const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -36,23 +35,23 @@ export default function WelderDashboard() {
     }
   }, [user, authLoading, navigate]);
 
-  // Track when initial data load completes
+  // Check profile completion only after data is loaded
+  // PostLoginRouter already handles the main routing - this is just a safety check
   useEffect(() => {
-    if (!welderLoading) {
-      setHasInitialLoad(true);
+    if (!welderLoading && !authLoading && user && welderProfile) {
+      // If profile exists but is incomplete (missing required fields), redirect to setup
+      const isComplete = welderProfile.city && 
+        welderProfile.state && 
+        (welderProfile.weld_processes?.length ?? 0) > 0;
+      
+      if (!isComplete) {
+        navigate("/welder/profile/setup");
+      }
     }
-  }, [welderLoading]);
+  }, [welderProfile, welderLoading, user, navigate, authLoading]);
 
-  useEffect(() => {
-    // Only redirect after initial load completes AND profile is confirmed null
-    if (hasInitialLoad && !welderProfile && user && !welderLoading) {
-      navigate("/welder/profile/setup");
-    }
-  }, [welderProfile, welderLoading, user, navigate, hasInitialLoad]);
-
-  const isLoading = authLoading || profileLoading || welderLoading;
-
-  if (isLoading) {
+  // Only show loading skeleton for auth check - welder data can load in background
+  if (authLoading) {
     return (
       <DashboardLayout userType="welder">
         <div className="p-6 space-y-6">
