@@ -1121,6 +1121,7 @@ export type Database = {
           updated_at: string | null
           user_id: string
           username: string | null
+          website_url: string | null
           weld_positions: string[] | null
           weld_processes: string[] | null
           willing_to_relocate: boolean | null
@@ -1176,6 +1177,7 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           username?: string | null
+          website_url?: string | null
           weld_positions?: string[] | null
           weld_processes?: string[] | null
           willing_to_relocate?: boolean | null
@@ -1231,6 +1233,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           username?: string | null
+          website_url?: string | null
           weld_positions?: string[] | null
           weld_processes?: string[] | null
           willing_to_relocate?: boolean | null
