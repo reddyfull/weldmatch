@@ -20,7 +20,6 @@ import {
   Sparkles,
   RefreshCw,
   AlertCircle,
-  Users,
   Building,
   Flame,
   Clock
@@ -31,7 +30,7 @@ import { useEmployerProfile } from "@/hooks/useUserProfile";
 import { getMarketIntelligence, MarketIntelligenceResponse } from "@/lib/ai-phase2";
 import { toast } from "@/hooks/use-toast";
 import { WeldingLoadingAnimation } from "@/components/ai/WeldingLoadingAnimation";
-import { WELD_PROCESSES_FULL, CERTIFICATIONS_LIST, INDUSTRY_PREFERENCES } from "@/constants/aiFeatureOptions";
+import { WELD_PROCESSES_FULL, CERTIFICATIONS_LIST } from "@/constants/aiFeatureOptions";
 import { supabase } from "@/integrations/supabase/client";
 
 const US_STATES = [
@@ -83,7 +82,6 @@ export default function EmployerMarketIntelligence() {
       }
 
       try {
-        // Check for cached employer market intelligence using user_id match
         const { data: cached, error } = await supabase
           .from('market_intelligence_results')
           .select('*')
@@ -123,7 +121,7 @@ export default function EmployerMarketIntelligence() {
         experienceLevel: filters.experienceLevel,
       });
 
-      if (response.success) {
+      if (response?.success) {
         setIntelligence(response);
         setLastGeneratedAt(new Date().toISOString());
 
@@ -187,15 +185,13 @@ export default function EmployerMarketIntelligence() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <DashboardLayout userType="employer">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <WeldingLoadingAnimation message="Analyzing hiring market data..." />
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // Safe access helpers with null checks
+  const marketOverview = intelligence?.intelligence?.marketOverview;
+  const salaryIntelligence = intelligence?.intelligence?.salaryIntelligence;
+  const demandAnalysis = intelligence?.intelligence?.demandAnalysis;
+  const industryInsights = intelligence?.intelligence?.industryInsights ?? [];
+  const personalizedInsights = intelligence?.intelligence?.personalizedInsights;
+  const marketAlerts = intelligence?.intelligence?.marketAlerts ?? [];
 
   return (
     <DashboardLayout userType="employer">
@@ -337,12 +333,12 @@ export default function EmployerMarketIntelligence() {
                   <CardContent>
                     <div className="flex items-center gap-2">
                       <Badge className={`${
-                        intelligence.intelligence.marketOverview.demandLevel === 'Hot' ? 'bg-red-500' :
-                        intelligence.intelligence.marketOverview.demandLevel === 'Strong' ? 'bg-orange-500' :
+                        marketOverview?.demandLevel === 'Hot' ? 'bg-red-500' :
+                        marketOverview?.demandLevel === 'Strong' ? 'bg-orange-500' :
                         'bg-yellow-500'
                       } text-white`}>
-                        {intelligence.intelligence.marketOverview.demandLevel === 'Hot' && <Flame className="w-3 h-3 mr-1" />}
-                        {intelligence.intelligence.marketOverview.demandLevel}
+                        {marketOverview?.demandLevel === 'Hot' && <Flame className="w-3 h-3 mr-1" />}
+                        {marketOverview?.demandLevel ?? 'N/A'}
                       </Badge>
                     </div>
                   </CardContent>
@@ -354,7 +350,7 @@ export default function EmployerMarketIntelligence() {
                   <CardContent>
                     <div className="flex items-baseline gap-1">
                       <DollarSign className="w-5 h-5 text-green-500" />
-                      <span className="text-2xl font-bold">{intelligence.intelligence.salaryIntelligence.medianHourly}</span>
+                      <span className="text-2xl font-bold">{salaryIntelligence?.medianHourly ?? 0}</span>
                       <span className="text-muted-foreground">/hr</span>
                     </div>
                   </CardContent>
@@ -365,7 +361,7 @@ export default function EmployerMarketIntelligence() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-lg font-semibold">
-                      ${intelligence.intelligence.salaryIntelligence.range.low} - ${intelligence.intelligence.salaryIntelligence.range.high}
+                      ${salaryIntelligence?.range?.low ?? 0} - ${salaryIntelligence?.range?.high ?? 0}
                     </p>
                   </CardContent>
                 </Card>
@@ -375,15 +371,15 @@ export default function EmployerMarketIntelligence() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center gap-2">
-                      {intelligence.intelligence.salaryIntelligence.trendDirection === 'up' ? (
+                      {salaryIntelligence?.trendDirection === 'up' ? (
                         <TrendingUp className="w-5 h-5 text-green-500" />
-                      ) : intelligence.intelligence.salaryIntelligence.trendDirection === 'down' ? (
+                      ) : salaryIntelligence?.trendDirection === 'down' ? (
                         <TrendingDown className="w-5 h-5 text-red-500" />
                       ) : (
                         <Minus className="w-5 h-5 text-yellow-500" />
                       )}
                       <span className="text-lg font-semibold">
-                        {intelligence.intelligence.salaryIntelligence.yearOverYearChange}
+                        {salaryIntelligence?.yearOverYearChange ?? 0}%
                       </span>
                     </div>
                   </CardContent>
@@ -395,11 +391,11 @@ export default function EmployerMarketIntelligence() {
                   <CardTitle>Market Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{intelligence.intelligence.marketOverview.marketSummary}</p>
+                  <p className="text-muted-foreground">{marketOverview?.marketSummary ?? 'No market summary available.'}</p>
                   <div className="mt-4">
                     <h4 className="font-medium mb-2">Key Market Drivers</h4>
                     <div className="flex flex-wrap gap-2">
-                      {intelligence.intelligence.marketOverview.keyDrivers.map((driver, i) => (
+                      {(marketOverview?.keyDrivers ?? []).map((driver, i) => (
                         <Badge key={i} variant="secondary">{driver}</Badge>
                       ))}
                     </div>
@@ -407,7 +403,7 @@ export default function EmployerMarketIntelligence() {
                 </CardContent>
               </Card>
 
-              {intelligence.intelligence.marketAlerts.length > 0 && (
+              {marketAlerts.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -416,14 +412,14 @@ export default function EmployerMarketIntelligence() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {intelligence.intelligence.marketAlerts.map((alert, i) => (
+                    {marketAlerts.map((alert, i) => (
                       <div key={i} className={`p-3 rounded-lg border-l-4 ${
                         alert.type === 'opportunity' ? 'border-l-green-500 bg-green-50' :
                         alert.type === 'warning' ? 'border-l-red-500 bg-red-50' :
                         'border-l-blue-500 bg-blue-50'
                       }`}>
-                        <h4 className="font-medium">{alert.title}</h4>
-                        <p className="text-sm text-muted-foreground">{alert.description}</p>
+                        <h4 className="font-medium">{alert.title ?? 'Alert'}</h4>
+                        <p className="text-sm text-muted-foreground">{alert.description ?? ''}</p>
                       </div>
                     ))}
                   </CardContent>
@@ -439,20 +435,20 @@ export default function EmployerMarketIntelligence() {
                     <CardDescription>What to offer at each level</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {(intelligence.intelligence.salaryIntelligence?.byExperience || []).map((level: any, i) => {
+                    {(salaryIntelligence?.byExperience ?? []).map((level: any, i) => {
                       const hourlyMid = typeof level.hourlyLow === 'number' && typeof level.hourlyHigh === 'number'
                         ? Math.round((level.hourlyLow + level.hourlyHigh) / 2)
                         : (typeof level.median === 'number' ? level.median : 0);
                       return (
                         <div key={i} className="space-y-1">
                           <div className="flex justify-between">
-                            <span className="font-medium">{level.level}</span>
+                            <span className="font-medium">{level.level ?? 'N/A'}</span>
                             <span className="text-accent font-semibold">${hourlyMid}/hr</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Progress value={((hourlyMid - 20) / 60) * 100} className="flex-1 h-2" />
                             <span className="text-xs text-muted-foreground w-24">
-                              ${typeof level.hourlyLow === 'number' ? level.hourlyLow : level.range?.low || 'N/A'} - ${typeof level.hourlyHigh === 'number' ? level.hourlyHigh : level.range?.high || 'N/A'}
+                              ${typeof level.hourlyLow === 'number' ? level.hourlyLow : level.range?.low ?? 'N/A'} - ${typeof level.hourlyHigh === 'number' ? level.hourlyHigh : level.range?.high ?? 'N/A'}
                             </span>
                           </div>
                         </div>
@@ -467,17 +463,17 @@ export default function EmployerMarketIntelligence() {
                     <CardDescription>Additional pay for certified welders</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {(intelligence.intelligence.salaryIntelligence?.byCertification || []).map((cert: any, i) => (
+                    {(salaryIntelligence?.byCertification ?? []).map((cert: any, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                         <div className="flex items-center gap-2">
                           <Award className="w-4 h-4 text-accent" />
-                          <span>{cert.certification}</span>
+                          <span>{cert.certification ?? 'Unknown'}</span>
                         </div>
                         <div className="text-right">
                           <span className="text-green-600 font-semibold">
-                            +${typeof cert.salaryPremium === 'number' ? Math.round(cert.salaryPremium / 2080) : (cert.premium || 0)}/hr
+                            +${typeof cert.salaryPremium === 'number' ? Math.round(cert.salaryPremium / 2080) : (cert.premium ?? 0)}/hr
                           </span>
-                          <p className="text-xs text-muted-foreground">{cert.demandLevel || 'High demand'}</p>
+                          <p className="text-xs text-muted-foreground">{cert.demandLevel ?? 'High demand'}</p>
                         </div>
                       </div>
                     ))}
@@ -491,11 +487,11 @@ export default function EmployerMarketIntelligence() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {(intelligence.intelligence.salaryIntelligence?.byIndustry || []).map((ind: any, i) => (
+                    {(salaryIntelligence?.byIndustry ?? []).map((ind: any, i) => (
                       <div key={i} className="p-3 rounded-lg border text-center">
-                        <p className="font-medium">{ind.industry}</p>
+                        <p className="font-medium">{ind.industry ?? 'Unknown'}</p>
                         <p className="text-2xl font-bold text-accent">
-                          ${typeof ind.medianHourly === 'number' ? ind.medianHourly : (ind.median || 'N/A')}
+                          ${typeof ind.medianHourly === 'number' ? ind.medianHourly : (ind.median ?? 'N/A')}
                         </p>
                         <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                           {typeof ind.premiumPercent === 'number' && ind.premiumPercent > 0 && <TrendingUp className="w-3 h-3 text-green-500" />}
@@ -522,14 +518,14 @@ export default function EmployerMarketIntelligence() {
                     <CardDescription>Most sought-after skills in the market</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {intelligence.intelligence.demandAnalysis.hotSkills.map((skill, i) => (
+                    {(demandAnalysis?.hotSkills ?? []).map((skill: any, i) => (
                       <div key={i} className="space-y-1">
                         <div className="flex justify-between text-sm">
-                          <span className="font-medium">{skill.skill}</span>
-                          <span className="text-accent">{skill.premiumPotential} premium</span>
+                          <span className="font-medium">{skill.skill ?? 'Unknown'}</span>
+                          <span className="text-accent">{skill.premiumPotential ?? 'N/A'} premium</span>
                         </div>
-                        <Progress value={skill.demandScore} className="h-2" />
-                        <p className="text-xs text-muted-foreground">{skill.growthRate} growth</p>
+                        <Progress value={skill.demandScore ?? 0} className="h-2" />
+                        <p className="text-xs text-muted-foreground">{skill.growthRate ?? 'N/A'} growth</p>
                       </div>
                     ))}
                   </CardContent>
@@ -544,15 +540,15 @@ export default function EmployerMarketIntelligence() {
                     <CardDescription>Where to find skilled welders</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {intelligence.intelligence.demandAnalysis.hotLocations.map((loc, i) => (
+                    {(demandAnalysis?.hotLocations ?? []).map((loc: any, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                         <div>
-                          <p className="font-medium">{loc.location}</p>
-                          <p className="text-xs text-muted-foreground">Cost of Living: {loc.costOfLiving}</p>
+                          <p className="font-medium">{loc.location ?? 'Unknown'}</p>
+                          <p className="text-xs text-muted-foreground">Cost of Living: {loc.costOfLiving ?? 'N/A'}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">${loc.averagePay}/hr avg</p>
-                          <Progress value={loc.demandScore} className="h-1 w-16" />
+                          <p className="font-semibold">${loc.averagePay ?? 0}/hr avg</p>
+                          <Progress value={loc.demandScore ?? 0} className="h-1 w-16" />
                         </div>
                       </div>
                     ))}
@@ -570,16 +566,16 @@ export default function EmployerMarketIntelligence() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {intelligence.intelligence.industryInsights.map((insight, i) => (
+                  {industryInsights.map((insight: any, i) => (
                     <div key={i} className="p-4 rounded-lg border">
-                      <h4 className="font-semibold text-lg">{insight.industry}</h4>
-                      <p className="text-muted-foreground mt-1">{insight.overview}</p>
+                      <h4 className="font-semibold text-lg">{insight.industry ?? 'Unknown'}</h4>
+                      <p className="text-muted-foreground mt-1">{insight.overview ?? ''}</p>
                       <div className="mt-3">
-                        <p className="text-sm"><span className="font-medium">Outlook:</span> {insight.outlook}</p>
-                        {insight.topEmployers.length > 0 && (
+                        <p className="text-sm"><span className="font-medium">Outlook:</span> {insight.outlook ?? 'N/A'}</p>
+                        {(insight.topEmployers ?? []).length > 0 && (
                           <div className="mt-2">
                             <span className="text-sm font-medium">Top Employers: </span>
-                            <span className="text-sm text-muted-foreground">{insight.topEmployers.join(', ')}</span>
+                            <span className="text-sm text-muted-foreground">{(insight.topEmployers ?? []).join(', ')}</span>
                           </div>
                         )}
                       </div>
@@ -597,7 +593,7 @@ export default function EmployerMarketIntelligence() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {intelligence.intelligence.personalizedInsights.actionItems.map((item, i) => (
+                    {(personalizedInsights?.actionItems ?? []).map((item: any, i) => (
                       <li key={i} className="flex items-start gap-3">
                         <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
                           item.priority === 'high' ? 'bg-red-500' :
@@ -605,8 +601,8 @@ export default function EmployerMarketIntelligence() {
                           'bg-green-500'
                         }`} />
                         <div>
-                          <p className="font-medium">{item.action}</p>
-                          <p className="text-sm text-muted-foreground">{item.impact}</p>
+                          <p className="font-medium">{item.action ?? 'Action item'}</p>
+                          <p className="text-sm text-muted-foreground">{item.impact ?? ''}</p>
                         </div>
                       </li>
                     ))}
