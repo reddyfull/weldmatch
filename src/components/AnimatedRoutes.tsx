@@ -62,6 +62,7 @@ const EmployerMarketIntelligence = lazy(() => import("@/pages/employer/MarketInt
 const AdminCertifications = lazy(() => import("@/pages/admin/AdminCertifications"));
 const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
 const AdminPayments = lazy(() => import("@/pages/admin/AdminPayments"));
+const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminAuditLog = lazy(() => import("@/pages/admin/AdminAuditLog"));
 
 // Demo Pages
@@ -137,6 +138,7 @@ export default function AnimatedRoutes() {
         <Route path="/admin/certifications" element={<LazyPage><AdminCertifications /></LazyPage>} />
         <Route path="/admin/payments" element={<LazyPage><AdminPayments /></LazyPage>} />
         <Route path="/admin/users" element={<LazyPage><AdminUsers /></LazyPage>} />
+        <Route path="/admin/settings" element={<LazyPage><AdminSettings /></LazyPage>} />
         <Route path="/admin/audit-log" element={<LazyPage><AdminAuditLog /></LazyPage>} />
         <Route path="/admin/dashboard" element={<LazyPage><AdminCertifications /></LazyPage>} />
         
