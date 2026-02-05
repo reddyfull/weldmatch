@@ -31,6 +31,9 @@ export interface WelderProfile {
   is_available: boolean;
   profile_completion: number;
   profile_setup_complete: boolean;
+  website_url: string | null;
+  linkedin_url: string | null;
+  instagram_url: string | null;
   created_at: string;
   updated_at: string;
 }

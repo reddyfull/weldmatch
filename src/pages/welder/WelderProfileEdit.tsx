@@ -21,6 +21,7 @@ import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { CertificationUpload } from "@/components/CertificationUpload";
 import { CertificationsList } from "@/components/CertificationsList";
 import { SensitiveDataSection } from "@/components/welder/SensitiveDataSection";
+import { SocialLinksSection } from "@/components/welder/SocialLinksSection";
 
 export default function WelderProfileEdit() {
   const navigate = useNavigate();
@@ -48,6 +49,9 @@ export default function WelderProfileEdit() {
   const [willingToTravel, setWillingToTravel] = useState(false);
   const [bio, setBio] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
 
   // Populate form when data loads
   useEffect(() => {
@@ -64,6 +68,9 @@ export default function WelderProfileEdit() {
       setWillingToTravel(welderProfile.willing_to_travel || false);
       setBio(welderProfile.bio || "");
       setIsAvailable(welderProfile.is_available ?? true);
+      setWebsiteUrl(welderProfile.website_url || "");
+      setLinkedinUrl(welderProfile.linkedin_url || "");
+      setInstagramUrl(welderProfile.instagram_url || "");
     }
   }, [welderProfile]);
 
@@ -139,6 +146,9 @@ export default function WelderProfileEdit() {
         bio: bio || null,
         is_available: isAvailable,
         profile_completion: calculateCompletion(),
+        website_url: websiteUrl || null,
+        linkedin_url: linkedinUrl || null,
+        instagram_url: instagramUrl || null,
       });
 
       await queryClient.invalidateQueries({ queryKey: ["welder_profile", user?.id] });
@@ -391,6 +401,16 @@ export default function WelderProfileEdit() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Social & Web Presence Section */}
+        <SocialLinksSection
+          websiteUrl={websiteUrl}
+          linkedinUrl={linkedinUrl}
+          instagramUrl={instagramUrl}
+          onWebsiteChange={(v) => handleFieldChange(setWebsiteUrl, v)}
+          onLinkedinChange={(v) => handleFieldChange(setLinkedinUrl, v)}
+          onInstagramChange={(v) => handleFieldChange(setInstagramUrl, v)}
+        />
 
         {/* Sensitive Data Section */}
         <SensitiveDataSection
