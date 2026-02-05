@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Flame, MapPin, Wrench, Target, ChevronRight, ChevronLeft, Check, Loader2, AlertCircle } from "lucide-react";
+import { Flame, MapPin, Wrench, Target, ChevronRight, ChevronLeft, Check, Loader2, AlertCircle, Link2, CheckCircle2, XCircle } from "lucide-react";
 import { useCreateWelderProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +57,9 @@ export default function WelderProfileSetup() {
   const [state, setState] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [yearsExperience, setYearsExperience] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [usernameDebounce, setUsernameDebounce] = useState<NodeJS.Timeout | null>(null);
   
   // Step 2 fields
   const [selectedProcesses, setSelectedProcesses] = useState<string[]>([]);
@@ -86,8 +89,61 @@ export default function WelderProfileSetup() {
       if (existingProfile.salary_type) setSalaryType(existingProfile.salary_type);
       if (existingProfile.willing_to_travel) setWillingToTravel(existingProfile.willing_to_travel);
       if (existingProfile.bio) setBio(existingProfile.bio);
+      if (existingProfile.username) {
+        setUsername(existingProfile.username);
+        setUsernameStatus("available");
+      }
     }
   }, [existingProfile]);
+
+  // Check username availability
+  const checkUsernameAvailability = async (value: string) => {
+    if (!value || value.length < 3) {
+      setUsernameStatus("idle");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    try {
+      const { data, error } = await supabase.rpc("check_username_available", {
+        p_username: value,
+      });
+
+      if (error) throw error;
+
+      const result = data as { available: boolean; reason?: string };
+      
+      // If the username belongs to the current user, it's available
+      if (existingProfile?.username === value) {
+        setUsernameStatus("available");
+      } else {
+        setUsernameStatus(result.available ? "available" : "taken");
+      }
+    } catch (err) {
+      console.error("Username check failed:", err);
+      setUsernameStatus("idle");
+    }
+  };
+
+  const handleUsernameChange = (value: string) => {
+    // Only allow lowercase letters, numbers, and hyphens
+    const sanitized = value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    setUsername(sanitized);
+    setUsernameStatus("idle");
+
+    // Clear existing debounce
+    if (usernameDebounce) {
+      clearTimeout(usernameDebounce);
+    }
+
+    // Set new debounce for availability check
+    if (sanitized.length >= 3) {
+      const timeout = setTimeout(() => {
+        checkUsernameAvailability(sanitized);
+      }, 500);
+      setUsernameDebounce(timeout);
+    }
+  };
 
   // Handler for when resume suggestions are ready
   const handleResumeSuggestions = (suggestions: ProfileSuggestions) => {
@@ -181,6 +237,7 @@ export default function WelderProfileSetup() {
         bio: bio || null,
         is_available: true,
         profile_setup_complete: true,
+        username: username || null,
       });
 
       // Refetch to ensure fresh data before navigating (prevents race condition)
@@ -327,6 +384,49 @@ export default function WelderProfileSetup() {
                   value={yearsExperience}
                   onChange={(e) => setYearsExperience(e.target.value)}
                 />
+              </div>
+
+              {/* Public Profile URL */}
+              <div className="space-y-2">
+                <Label htmlFor="username">Your Public Profile URL</Label>
+                <p className="text-xs text-muted-foreground">
+                  Claim a unique URL for your public portfolio (optional)
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center h-12 px-3 bg-muted rounded-l-md border border-r-0 text-sm text-muted-foreground">
+                    <Link2 className="w-4 h-4 mr-1" />
+                    weldmatch.com/w/
+                  </div>
+                  <div className="relative flex-1">
+                    <Input
+                      id="username"
+                      placeholder="yourname"
+                      className="h-12 rounded-l-none pr-10"
+                      value={username}
+                      onChange={(e) => handleUsernameChange(e.target.value)}
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {usernameStatus === "checking" && (
+                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                      )}
+                      {usernameStatus === "available" && (
+                        <CheckCircle2 className="w-4 h-4 text-success" />
+                      )}
+                      {usernameStatus === "taken" && (
+                        <XCircle className="w-4 h-4 text-destructive" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {usernameStatus === "available" && username.length >= 3 && (
+                  <p className="text-xs text-success">Username is available!</p>
+                )}
+                {usernameStatus === "taken" && (
+                  <p className="text-xs text-destructive">This username is already taken</p>
+                )}
+                {username.length > 0 && username.length < 3 && (
+                  <p className="text-xs text-muted-foreground">Username must be at least 3 characters</p>
+                )}
               </div>
             </div>
           )}
