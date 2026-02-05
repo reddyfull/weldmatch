@@ -173,20 +173,20 @@ export default function EmployerAIChatAssistant() {
                     I'm here to help with recruitment strategies, salary benchmarks, interview tips, and more.
                   </p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl px-4">
                   {suggestedQuestions.map((question, i) => (
                     <Button
                       key={i}
                       variant="outline"
                       size="sm"
-                      className="text-left justify-start h-auto py-3 px-4"
+                      className="text-left justify-start h-auto py-3 px-4 whitespace-normal"
                       onClick={() => {
                         setInput(question);
                         inputRef.current?.focus();
                       }}
                     >
                       <Sparkles className="w-4 h-4 mr-2 shrink-0 text-accent" />
-                      <span className="text-sm">{question}</span>
+                      <span className="text-sm text-left">{question}</span>
                     </Button>
                   ))}
                 </div>
