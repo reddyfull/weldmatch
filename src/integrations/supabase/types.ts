@@ -1386,6 +1386,10 @@ export type Database = {
       }
       can_view_profile: { Args: { _profile_id: string }; Returns: boolean }
       check_username_available: { Args: { p_username: string }; Returns: Json }
+      employer_can_view_welder_profile: {
+        Args: { _welder_profile_id: string }
+        Returns: boolean
+      }
       get_audit_log: {
         Args: {
           p_action?: string
@@ -1444,6 +1448,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      welder_can_view_employer_profile: {
+        Args: { _employer_profile_id: string }
+        Returns: boolean
       }
     }
     Enums: {
