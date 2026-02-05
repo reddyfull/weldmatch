@@ -1,26 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  User,
-  Briefcase,
   Eye,
   FileText,
   ChevronRight,
-  AlertCircle,
   CheckCircle,
-  Clock,
-  MapPin,
-  DollarSign,
+  Briefcase,
   Globe,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWelderProfile, useUserProfile } from "@/hooks/useUserProfile";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { ProfileStrength } from "@/components/welder/ProfileStrength";
 
 export default function WelderDashboard() {
@@ -35,20 +31,51 @@ export default function WelderDashboard() {
     }
   }, [user, authLoading, navigate]);
 
-  // Check profile completion only after data is loaded
-  // PostLoginRouter already handles the main routing - this is just a safety check
-  useEffect(() => {
-    if (!welderLoading && !authLoading && user && welderProfile) {
-      // If profile exists but is incomplete (missing required fields), redirect to setup
-      const isComplete = welderProfile.city && 
-        welderProfile.state && 
-        (welderProfile.weld_processes?.length ?? 0) > 0;
-      
-      if (!isComplete) {
-        navigate("/welder/profile/setup");
-      }
-    }
-  }, [welderProfile, welderLoading, user, navigate, authLoading]);
+  // Fetch real stats in parallel
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["welder_stats", welderProfile?.id],
+    queryFn: async () => {
+      if (!welderProfile?.id) return { profileViews: 0, applications: 0, interviews: 0, jobMatches: 0 };
+
+      // Run all stats queries in parallel
+      const [viewsResult, applicationsResult, interviewsResult, matchesResult] = await Promise.all([
+        // Profile views this week
+        supabase
+          .from("profile_access_logs")
+          .select("*", { count: "exact", head: true })
+          .eq("welder_id", welderProfile.id)
+          .eq("access_type", "view")
+          .gte("accessed_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        // Total applications
+        supabase
+          .from("applications")
+          .select("*", { count: "exact", head: true })
+          .eq("welder_id", welderProfile.id),
+        // Interviews scheduled
+        supabase
+          .from("applications")
+          .select("*", { count: "exact", head: true })
+          .eq("welder_id", welderProfile.id)
+          .eq("status", "interview"),
+        // Job matches (active jobs matching welder's processes)
+        supabase
+          .from("jobs")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "active")
+          .overlaps("required_processes", welderProfile.weld_processes || [])
+      ]);
+
+      return {
+        profileViews: viewsResult.count || 0,
+        applications: applicationsResult.count || 0,
+        interviews: interviewsResult.count || 0,
+        jobMatches: matchesResult.count || 0,
+      };
+    },
+    enabled: !!welderProfile?.id,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
   // Only show loading skeleton for auth check - welder data can load in background
   if (authLoading) {
@@ -65,14 +92,6 @@ export default function WelderDashboard() {
       </DashboardLayout>
     );
   }
-
-  const profileCompletion = welderProfile?.profile_completion || 0;
-  const incompleteItems = [];
-  if (!welderProfile?.city) incompleteItems.push("Add your location");
-  if (!welderProfile?.weld_processes?.length) incompleteItems.push("Add weld processes");
-  if (!welderProfile?.weld_positions?.length) incompleteItems.push("Add weld positions");
-  if (!welderProfile?.bio) incompleteItems.push("Write a bio");
-  if (!welderProfile?.desired_salary_min) incompleteItems.push("Set salary preferences");
 
   return (
     <DashboardLayout userType="welder">
@@ -122,7 +141,9 @@ export default function WelderDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Profile Views</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">
+                    {statsLoading ? <Skeleton className="h-8 w-12" /> : stats?.profileViews ?? 0}
+                  </p>
                   <p className="text-xs text-muted-foreground">This week</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -137,7 +158,9 @@ export default function WelderDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Applications Sent</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">
+                    {statsLoading ? <Skeleton className="h-8 w-12" /> : stats?.applications ?? 0}
+                  </p>
                   <p className="text-xs text-muted-foreground">Total</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
@@ -152,7 +175,9 @@ export default function WelderDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Interviews</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">
+                    {statsLoading ? <Skeleton className="h-8 w-12" /> : stats?.interviews ?? 0}
+                  </p>
                   <p className="text-xs text-muted-foreground">Scheduled</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
@@ -167,8 +192,10 @@ export default function WelderDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Job Matches</p>
-                  <p className="text-2xl font-bold">0</p>
-                  <p className="text-xs text-muted-foreground">New this week</p>
+                  <p className="text-2xl font-bold">
+                    {statsLoading ? <Skeleton className="h-8 w-12" /> : stats?.jobMatches ?? 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Based on your skills</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
                   <CheckCircle className="w-6 h-6 text-warning" />

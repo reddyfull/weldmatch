@@ -1,5 +1,5 @@
+import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
-import { useMemo } from "react";
 
 interface Particle {
   id: number;
@@ -16,7 +16,8 @@ interface SparkParticlesProps {
   className?: string;
 }
 
-export function SparkParticles({ count = 20, className = "" }: SparkParticlesProps) {
+// Memoized component to prevent re-initialization on parent re-renders
+export const SparkParticles = memo(function SparkParticles({ count = 12, className = "" }: SparkParticlesProps) {
   const particles = useMemo(() => {
     const colors = [
       "hsl(var(--accent))",
@@ -29,8 +30,8 @@ export function SparkParticles({ count = 20, className = "" }: SparkParticlesPro
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size: Math.random() * 4 + 2,
-      duration: Math.random() * 3 + 2,
+      size: Math.random() * 3 + 2,
+      duration: Math.random() * 3 + 3,
       delay: Math.random() * 2,
       color: colors[Math.floor(Math.random() * colors.length)],
     }));
@@ -41,102 +42,39 @@ export function SparkParticles({ count = 20, className = "" }: SparkParticlesPro
       {particles.map((particle) => (
         <motion.div
           key={particle.id}
-          className="absolute rounded-full"
+          className="absolute rounded-full will-change-transform"
           style={{
             left: `${particle.x}%`,
             top: `${particle.y}%`,
             width: particle.size,
             height: particle.size,
             backgroundColor: particle.color,
-            boxShadow: `0 0 ${particle.size * 2}px ${particle.color}, 0 0 ${particle.size * 4}px ${particle.color}`,
+            boxShadow: `0 0 ${particle.size * 2}px ${particle.color}`,
           }}
           initial={{ opacity: 0, scale: 0 }}
           animate={{
             opacity: [0, 1, 1, 0],
             scale: [0, 1, 1.2, 0],
             y: [0, -30, -60, -100],
-            x: [0, Math.random() * 20 - 10, Math.random() * 30 - 15],
           }}
           transition={{
             duration: particle.duration,
             delay: particle.delay,
             repeat: Infinity,
-            repeatDelay: Math.random() * 2,
+            repeatDelay: Math.random() * 3,
             ease: "easeOut",
           }}
         />
-      ))}
-
-      {/* Larger floating embers */}
-      {Array.from({ length: 5 }).map((_, i) => (
-        <motion.div
-          key={`ember-${i}`}
-          className="absolute w-1 h-1 rounded-full bg-accent"
-          style={{
-            left: `${20 + i * 15}%`,
-            bottom: "10%",
-            boxShadow: "0 0 10px hsl(var(--accent)), 0 0 20px hsl(var(--accent)), 0 0 30px hsl(var(--warning))",
-          }}
-          animate={{
-            y: [0, -200, -400],
-            x: [0, Math.sin(i) * 50, Math.cos(i) * 30],
-            opacity: [0, 1, 0],
-            scale: [0.5, 1.5, 0],
-          }}
-          transition={{
-            duration: 4 + i * 0.5,
-            delay: i * 0.8,
-            repeat: Infinity,
-            repeatDelay: 1,
-            ease: "easeOut",
-          }}
-        />
-      ))}
-
-      {/* Spark trails */}
-      {Array.from({ length: 3 }).map((_, i) => (
-        <motion.div
-          key={`trail-${i}`}
-          className="absolute"
-          style={{
-            left: `${30 + i * 20}%`,
-            bottom: "5%",
-          }}
-        >
-          {Array.from({ length: 4 }).map((_, j) => (
-            <motion.div
-              key={j}
-              className="absolute w-0.5 h-0.5 rounded-full"
-              style={{
-                backgroundColor: j % 2 === 0 ? "hsl(var(--accent))" : "hsl(var(--warning))",
-                boxShadow: `0 0 4px ${j % 2 === 0 ? "hsl(var(--accent))" : "hsl(var(--warning))"}`,
-              }}
-              animate={{
-                y: [0, -150 - j * 30],
-                x: [0, (i - 1) * 20 + Math.sin(j) * 10],
-                opacity: [0, 1, 0],
-                scale: [0.5, 1, 0.3],
-              }}
-              transition={{
-                duration: 2.5 + j * 0.3,
-                delay: i * 0.5 + j * 0.15,
-                repeat: Infinity,
-                repeatDelay: 2,
-                ease: "easeOut",
-              }}
-            />
-          ))}
-        </motion.div>
       ))}
     </div>
   );
-}
+});
 
-// Welding arc flash effect
-export function WeldingArc({ className = "" }: { className?: string }) {
+// Memoized welding arc flash effect
+export const WeldingArc = memo(function WeldingArc({ className = "" }: { className?: string }) {
   return (
     <motion.div
-      className={`absolute pointer-events-none ${className}`}
+      className={`absolute pointer-events-none will-change-transform ${className}`}
       style={{
         width: 60,
         height: 60,
@@ -155,4 +93,4 @@ export function WeldingArc({ className = "" }: { className?: string }) {
       }}
     />
   );
-}
+});

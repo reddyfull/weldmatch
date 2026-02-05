@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -51,16 +51,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: false,
   });
 
-  // Check subscription status
+  // Cache to prevent duplicate subscription checks
+  const subscriptionCheckedRef = useRef(false);
+  const adminCheckedForUserRef = useRef<string | null>(null);
+
+  // Check subscription status - centralized, no duplicate calls
   const checkSubscription = useCallback(async () => {
-    if (!user) {
-      setSubscription({
-        subscribed: false,
-        plan: "free_trial",
-        subscriptionEnd: null,
-        customerId: null,
-        isLoading: false,
-      });
+    if (!user || subscriptionCheckedRef.current) {
       return;
     }
 
@@ -69,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    subscriptionCheckedRef.current = true;
     setSubscription(prev => ({ ...prev, isLoading: true }));
 
     try {
@@ -93,68 +91,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, profile?.user_type]);
 
-  // Check if user has admin role
-  const checkAdminRole = async (userId: string) => {
+  // Parallel fetch profile and admin role
+  const fetchUserData = useCallback(async (userId: string) => {
+    // Skip if we already checked admin for this user
+    if (adminCheckedForUserRef.current === userId) {
+      return;
+    }
+    adminCheckedForUserRef.current = userId;
+
     try {
-      const { data, error } = await supabase
-        .rpc('has_role', { _user_id: userId, _role: 'admin' });
-      
-      if (error) {
-        console.error('Error checking admin role:', error);
+      // Run profile fetch and admin check in parallel
+      const [profileResult, adminResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle(),
+        supabase.rpc('has_role', { _user_id: userId, _role: 'admin' })
+      ]);
+
+      // Handle profile result
+      if (profileResult.error) {
+        console.error("Error fetching profile:", profileResult.error);
+      } else if (profileResult.data) {
+        setProfile(profileResult.data as UserProfile);
+      }
+
+      // Handle admin result
+      if (adminResult.error) {
+        console.error('Error checking admin role:', adminResult.error);
         setIsAdmin(false);
       } else {
-        setIsAdmin(data === true);
+        setIsAdmin(adminResult.data === true);
       }
     } catch (error) {
-      console.error('Error checking admin role:', error);
+      console.error("Error fetching user data:", error);
       setIsAdmin(false);
     } finally {
       setAdminChecked(true);
     }
-  };
-
-  // Fetch user profile from Supabase
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching profile:", error);
-        return null;
-      }
-
-      if (data) {
-        setProfile(data as UserProfile);
-        return data;
-      }
-      return null;
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      return null;
-    }
-  };
+  }, []);
 
   useEffect(() => {
     // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer profile fetch with setTimeout to avoid deadlock
         if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-            checkAdminRole(session.user.id);
-          }, 0);
+          // No setTimeout - directly call the parallel fetch
+          fetchUserData(session.user.id);
         } else {
           setProfile(null);
           setIsAdmin(false);
           setAdminChecked(true);
+          // Reset caches on logout
+          subscriptionCheckedRef.current = false;
+          adminCheckedForUserRef.current = null;
         }
         
         setLoading(false);
@@ -167,15 +161,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchProfile(session.user.id);
-        checkAdminRole(session.user.id);
+        fetchUserData(session.user.id);
       }
       
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => authSubscription.unsubscribe();
+  }, [fetchUserData]);
 
   const signInWithGoogle = async () => {
     try {
@@ -193,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       return { error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Google sign-in error:", error);
       return { error: error as Error };
     }
@@ -217,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       return { error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Email sign-in error:", error);
       return { error: error as Error };
     }
@@ -250,7 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       return { error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Sign-up error:", error);
       return { error: error as Error };
     }
@@ -261,6 +254,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setIsAdmin(false);
+    // Reset caches
+    subscriptionCheckedRef.current = false;
+    adminCheckedForUserRef.current = null;
   };
 
   const resetPassword = async (email: string) => {
@@ -274,14 +271,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       return { error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { error: error as Error };
     }
   };
 
-  // Check subscription when profile changes to employer
+  // Check subscription when profile changes to employer - only once
   useEffect(() => {
-    if (profile?.user_type === "employer" && user) {
+    if (profile?.user_type === "employer" && user && !subscriptionCheckedRef.current) {
       checkSubscription();
     }
   }, [profile?.user_type, user, checkSubscription]);

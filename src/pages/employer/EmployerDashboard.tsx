@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,6 @@ import {
   CheckCircle,
   Eye,
   TrendingUp,
-  AlertCircle,
   Sparkles,
   Zap,
   ArrowRight,
@@ -32,7 +31,6 @@ export default function EmployerDashboard() {
   const { user, loading: authLoading, subscription } = useAuth();
   const { data: profile, isLoading: profileLoading } = useUserProfile();
   const { data: employerProfile, isLoading: employerLoading } = useEmployerProfile();
-  const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -40,34 +38,13 @@ export default function EmployerDashboard() {
     }
   }, [user, authLoading, navigate]);
 
-  // Track when initial data load completes
-  useEffect(() => {
-    if (!employerLoading) {
-      setHasInitialLoad(true);
-    }
-  }, [employerLoading]);
-
-  useEffect(() => {
-    // Only redirect after initial load completes AND profile is confirmed null
-    if (hasInitialLoad && !employerProfile && user && !employerLoading) {
-      navigate("/employer/profile/setup");
-    }
-  }, [employerProfile, employerLoading, user, navigate, hasInitialLoad]);
-
-  // Fetch real-time stats
+  // Fetch real-time stats with parallel queries
   const { data: stats } = useQuery({
     queryKey: ["employer_stats", employerProfile?.id],
     queryFn: async () => {
       if (!employerProfile?.id) return { activeJobs: 0, applications: 0, interviews: 0, hires: 0 };
 
-      // Fetch active jobs count
-      const { count: activeJobsCount } = await supabase
-        .from("jobs")
-        .select("*", { count: "exact", head: true })
-        .eq("employer_id", employerProfile.id)
-        .eq("status", "active");
-
-      // Fetch all applications for this employer's jobs
+      // First get job IDs (required for subsequent queries)
       const { data: jobIds } = await supabase
         .from("jobs")
         .select("id")
@@ -75,50 +52,99 @@ export default function EmployerDashboard() {
 
       const jobIdList = jobIds?.map(j => j.id) || [];
 
-      let applicationsCount = 0;
-      let interviewsCount = 0;
-      let hiresCount = 0;
+      // If no jobs, return early
+      if (jobIdList.length === 0) {
+        return { activeJobs: 0, applications: 0, interviews: 0, hires: 0 };
+      }
 
-      if (jobIdList.length > 0) {
-        const { count: totalApps } = await supabase
+      // Start of month for hires filter
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      // Run ALL counts in parallel using Promise.all
+      const [activeJobsResult, totalAppsResult, interviewsResult, hiresResult] = await Promise.all([
+        supabase
+          .from("jobs")
+          .select("*", { count: "exact", head: true })
+          .eq("employer_id", employerProfile.id)
+          .eq("status", "active"),
+        supabase
           .from("applications")
           .select("*", { count: "exact", head: true })
-          .in("job_id", jobIdList);
-
-        const { count: interviews } = await supabase
+          .in("job_id", jobIdList),
+        supabase
           .from("applications")
           .select("*", { count: "exact", head: true })
           .in("job_id", jobIdList)
-          .eq("status", "interview");
-
-        // Hires this month
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const { count: hires } = await supabase
+          .eq("status", "interview"),
+        supabase
           .from("applications")
           .select("*", { count: "exact", head: true })
           .in("job_id", jobIdList)
           .eq("status", "hired")
-          .gte("updated_at", startOfMonth.toISOString());
-
-        applicationsCount = totalApps || 0;
-        interviewsCount = interviews || 0;
-        hiresCount = hires || 0;
-      }
+          .gte("updated_at", startOfMonth.toISOString())
+      ]);
 
       return {
-        activeJobs: activeJobsCount || 0,
-        applications: applicationsCount,
-        interviews: interviewsCount,
-        hires: hiresCount,
+        activeJobs: activeJobsResult.count || 0,
+        applications: totalAppsResult.count || 0,
+        interviews: interviewsResult.count || 0,
+        hires: hiresResult.count || 0,
       };
     },
     enabled: !!employerProfile?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   const isLoading = authLoading || profileLoading || employerLoading;
+
+  // Memoize trial calculations
+  const trialInfo = useMemo(() => {
+    const trialDaysRemaining = employerProfile?.trial_ends_at
+      ? Math.max(0, Math.ceil((new Date(employerProfile.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      : 14;
+    
+    return {
+      trialDaysRemaining,
+      trialProgress: ((14 - trialDaysRemaining) / 14) * 100,
+      isTrialExpiringSoon: trialDaysRemaining <= 3,
+      isTrialExpired: trialDaysRemaining === 0,
+    };
+  }, [employerProfile?.trial_ends_at]);
+
+  const hasPaidSubscription = isPaidPlan(subscription.plan) && subscription.subscribed;
+  const isOnTrial = !hasPaidSubscription;
+
+  // Memoize the subscription badge function
+  const getSubscriptionBadge = useCallback(() => {
+    if (hasPaidSubscription) {
+      return (
+        <Badge variant="outline" className="bg-success/10 text-success border-success">
+          <Sparkles className="w-3 h-3 mr-1" />
+          {getPlanDisplayName(subscription.plan)}
+        </Badge>
+      );
+    }
+    if (trialInfo.isTrialExpired) {
+      return <Badge variant="destructive">Trial Expired</Badge>;
+    }
+    if (trialInfo.isTrialExpiringSoon) {
+      return (
+        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive">
+          <AlertTriangle className="w-3 h-3 mr-1" />
+          {trialInfo.trialDaysRemaining} days left
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="bg-warning/10 text-warning border-warning">
+        <Clock className="w-3 h-3 mr-1" />
+        Free Trial
+      </Badge>
+    );
+  }, [hasPaidSubscription, subscription.plan, trialInfo]);
 
   if (isLoading) {
     return (
@@ -134,46 +160,6 @@ export default function EmployerDashboard() {
       </DashboardLayout>
     );
   }
-
-  const hasPaidSubscription = isPaidPlan(subscription.plan) && subscription.subscribed;
-  const isOnTrial = !hasPaidSubscription;
-  
-  // Calculate trial days remaining
-  const trialDaysRemaining = employerProfile?.trial_ends_at
-    ? Math.max(0, Math.ceil((new Date(employerProfile.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 14;
-
-  const trialProgress = ((14 - trialDaysRemaining) / 14) * 100;
-  const isTrialExpiringSoon = trialDaysRemaining <= 3;
-  const isTrialExpired = trialDaysRemaining === 0;
-
-  const getSubscriptionBadge = () => {
-    if (hasPaidSubscription) {
-      return (
-        <Badge variant="outline" className="bg-success/10 text-success border-success">
-          <Sparkles className="w-3 h-3 mr-1" />
-          {getPlanDisplayName(subscription.plan)}
-        </Badge>
-      );
-    }
-    if (isTrialExpired) {
-      return <Badge variant="destructive">Trial Expired</Badge>;
-    }
-    if (isTrialExpiringSoon) {
-      return (
-        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive">
-          <AlertTriangle className="w-3 h-3 mr-1" />
-          {trialDaysRemaining} days left
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="outline" className="bg-warning/10 text-warning border-warning">
-        <Clock className="w-3 h-3 mr-1" />
-        Free Trial
-      </Badge>
-    );
-  };
 
   return (
     <DashboardLayout userType="employer">
@@ -199,9 +185,9 @@ export default function EmployerDashboard() {
         {/* Trial Banner - Only shown for free trial users */}
         {isOnTrial && (
           <div className={`relative overflow-hidden rounded-xl border-2 ${
-            isTrialExpired 
+            trialInfo.isTrialExpired 
               ? "bg-destructive/5 border-destructive" 
-              : isTrialExpiringSoon 
+              : trialInfo.isTrialExpiringSoon 
                 ? "bg-gradient-to-r from-destructive/10 via-warning/10 to-destructive/10 border-destructive/50" 
                 : "bg-gradient-to-r from-accent/10 via-primary/10 to-accent/10 border-accent/30"
           }`}>
@@ -212,15 +198,15 @@ export default function EmployerDashboard() {
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="flex items-start gap-4">
                   <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
-                    isTrialExpired 
+                    trialInfo.isTrialExpired 
                       ? "bg-destructive/20" 
-                      : isTrialExpiringSoon 
+                      : trialInfo.isTrialExpiringSoon 
                         ? "bg-warning/20" 
                         : "bg-accent/20"
                   }`}>
-                    {isTrialExpired ? (
+                    {trialInfo.isTrialExpired ? (
                       <AlertTriangle className="w-7 h-7 text-destructive" />
-                    ) : isTrialExpiringSoon ? (
+                    ) : trialInfo.isTrialExpiringSoon ? (
                       <Zap className="w-7 h-7 text-warning animate-pulse" />
                     ) : (
                       <Clock className="w-7 h-7 text-accent" />
@@ -229,34 +215,34 @@ export default function EmployerDashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-lg font-bold">
-                        {isTrialExpired 
+                        {trialInfo.isTrialExpired 
                           ? "Your Free Trial Has Expired" 
-                          : isTrialExpiringSoon 
-                            ? `Only ${trialDaysRemaining} Day${trialDaysRemaining !== 1 ? 's' : ''} Left!` 
+                          : trialInfo.isTrialExpiringSoon 
+                            ? `Only ${trialInfo.trialDaysRemaining} Day${trialInfo.trialDaysRemaining !== 1 ? 's' : ''} Left!` 
                             : "Free Trial Active"
                         }
                       </h3>
                       {getSubscriptionBadge()}
                     </div>
                     <p className="text-muted-foreground">
-                      {isTrialExpired 
+                      {trialInfo.isTrialExpired 
                         ? "Upgrade now to continue posting jobs and connecting with qualified welders."
-                        : isTrialExpiringSoon 
+                        : trialInfo.isTrialExpiringSoon 
                           ? "Upgrade to Professional or Enterprise to unlock unlimited access before your trial ends."
-                          : `You have ${trialDaysRemaining} days remaining to explore all features. Upgrade anytime to unlock unlimited access.`
+                          : `You have ${trialInfo.trialDaysRemaining} days remaining to explore all features. Upgrade anytime to unlock unlimited access.`
                       }
                     </p>
                     
                     {/* Progress bar */}
-                    {!isTrialExpired && (
+                    {!trialInfo.isTrialExpired && (
                       <div className="max-w-md">
                         <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                          <span>Day {14 - trialDaysRemaining} of 14</span>
-                          <span>{trialDaysRemaining} days remaining</span>
+                          <span>Day {14 - trialInfo.trialDaysRemaining} of 14</span>
+                          <span>{trialInfo.trialDaysRemaining} days remaining</span>
                         </div>
                         <Progress 
-                          value={trialProgress} 
-                          className={`h-2 ${isTrialExpiringSoon ? "[&>div]:bg-destructive" : "[&>div]:bg-accent"}`}
+                          value={trialInfo.trialProgress} 
+                          className={`h-2 ${trialInfo.isTrialExpiringSoon ? "[&>div]:bg-destructive" : "[&>div]:bg-accent"}`}
                         />
                       </div>
                     )}
@@ -265,17 +251,17 @@ export default function EmployerDashboard() {
                 
                 <div className="flex flex-col sm:flex-row gap-2 lg:shrink-0">
                   <Button 
-                    variant={isTrialExpired || isTrialExpiringSoon ? "hero" : "default"}
+                    variant={trialInfo.isTrialExpired || trialInfo.isTrialExpiringSoon ? "hero" : "default"}
                     size="lg"
                     asChild
                   >
                     <Link to="/pricing">
                       <Sparkles className="w-4 h-4 mr-2" />
-                      {isTrialExpired ? "Upgrade Now" : "View Plans"}
+                      {trialInfo.isTrialExpired ? "Upgrade Now" : "View Plans"}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Link>
                   </Button>
-                  {!isTrialExpired && (
+                  {!trialInfo.isTrialExpired && (
                     <Button variant="ghost" size="lg" asChild>
                       <Link to="/employer/settings">
                         Manage Subscription
@@ -461,9 +447,9 @@ export default function EmployerDashboard() {
                 </Link>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex-col" asChild>
-                <Link to="/employer/profile/edit">
-                  <AlertCircle className="w-6 h-6 mb-2" />
-                  <span>Edit Profile</span>
+                <Link to="/employer/settings">
+                  <Sparkles className="w-6 h-6 mb-2" />
+                  <span>Upgrade Plan</span>
                 </Link>
               </Button>
             </div>
