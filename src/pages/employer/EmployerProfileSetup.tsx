@@ -83,8 +83,8 @@ export default function EmployerProfileSetup() {
         trial_ends_at: trialEndsAt.toISOString(),
       });
 
-      // Wait for cache invalidation to complete before navigating
-      await queryClient.invalidateQueries({ queryKey: ["employer_profile", user?.id] });
+      // Refetch to ensure fresh data before navigating (prevents race condition)
+      await queryClient.refetchQueries({ queryKey: ["employer_profile", user?.id] });
 
       toast({
         title: "Company Profile Created!",

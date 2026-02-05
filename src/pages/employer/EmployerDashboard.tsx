@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,27 +32,12 @@ export default function EmployerDashboard() {
   const { user, loading: authLoading, subscription } = useAuth();
   const { data: profile, isLoading: profileLoading } = useUserProfile();
   const { data: employerProfile, isLoading: employerLoading } = useEmployerProfile();
-  const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/login");
     }
   }, [user, authLoading, navigate]);
-
-  // Track when initial data load completes
-  useEffect(() => {
-    if (!employerLoading) {
-      setHasInitialLoad(true);
-    }
-  }, [employerLoading]);
-
-  useEffect(() => {
-    // Only redirect after initial load completes AND profile is confirmed null
-    if (hasInitialLoad && !employerProfile && user && !employerLoading) {
-      navigate("/employer/profile/setup");
-    }
-  }, [employerProfile, employerLoading, user, navigate, hasInitialLoad]);
 
   // Fetch real-time stats
   const { data: stats } = useQuery({

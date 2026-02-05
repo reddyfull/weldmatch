@@ -35,21 +35,6 @@ export default function WelderDashboard() {
     }
   }, [user, authLoading, navigate]);
 
-  // Check profile completion only after data is loaded
-  // PostLoginRouter already handles the main routing - this is just a safety check
-  useEffect(() => {
-    if (!welderLoading && !authLoading && user && welderProfile) {
-      // If profile exists but is incomplete (missing required fields), redirect to setup
-      const isComplete = welderProfile.city && 
-        welderProfile.state && 
-        (welderProfile.weld_processes?.length ?? 0) > 0;
-      
-      if (!isComplete) {
-        navigate("/welder/profile/setup");
-      }
-    }
-  }, [welderProfile, welderLoading, user, navigate, authLoading]);
-
   // Only show loading skeleton for auth check - welder data can load in background
   if (authLoading) {
     return (
