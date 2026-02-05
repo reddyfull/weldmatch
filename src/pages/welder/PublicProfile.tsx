@@ -796,7 +796,7 @@ function ContactSection({ profile, onContactClick }: { profile: any; onContactCl
   const userProfile = profile.profile;
 
   const hasContact = welderProfile.show_email || welderProfile.show_phone || 
-    welderProfile.linkedin_url || welderProfile.instagram_url;
+    welderProfile.linkedin_url || welderProfile.instagram_url || welderProfile.website_url;
 
   if (!hasContact) return null;
 
@@ -809,7 +809,7 @@ function ContactSection({ profile, onContactClick }: { profile: any; onContactCl
             <div className="p-2 rounded-lg bg-cyan-500/10">
               <Mail className="w-4 h-4 text-cyan-500" />
             </div>
-            Contact
+            Contact & Links
           </h2>
           <StaggerContainer staggerDelay={0.08} className="space-y-3">
             {welderProfile.show_email && userProfile.email && (
@@ -836,6 +836,25 @@ function ContactSection({ profile, onContactClick }: { profile: any; onContactCl
                   >
                     <Phone className="w-4 h-4 text-primary" />
                     <span className="text-sm">{userProfile.phone}</span>
+                  </a>
+                </HoverScale>
+              </StaggerItem>
+            )}
+            {welderProfile.website_url && (
+              <StaggerItem>
+                <HoverScale>
+                  <a
+                    href={welderProfile.website_url.startsWith('http') ? welderProfile.website_url : `https://${welderProfile.website_url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={onContactClick}
+                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted transition-colors"
+                  >
+                    <Globe className="w-4 h-4 text-primary" />
+                    <span className="text-sm truncate">
+                      {welderProfile.website_url.replace(/^https?:\/\//, '')}
+                    </span>
+                    <ExternalLink className="w-3 h-3 ml-auto opacity-50 flex-shrink-0" />
                   </a>
                 </HoverScale>
               </StaggerItem>
