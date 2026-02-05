@@ -240,15 +240,591 @@ export type Database = {
           },
         ]
       }
+      company_benefits: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          employer_id: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          employer_id: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          employer_id?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_benefits_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_benefits_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_certifications: {
+        Row: {
+          cert_name: string
+          cert_number: string | null
+          created_at: string | null
+          display_order: number | null
+          document_url: string | null
+          employer_id: string
+          expiry_date: string | null
+          id: string
+          issue_date: string | null
+          issuing_body: string | null
+          logo_url: string | null
+        }
+        Insert: {
+          cert_name: string
+          cert_number?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          document_url?: string | null
+          employer_id: string
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_body?: string | null
+          logo_url?: string | null
+        }
+        Update: {
+          cert_name?: string
+          cert_number?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          document_url?: string | null
+          employer_id?: string
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_body?: string | null
+          logo_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_certifications_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_certifications_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_gallery: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          employer_id: string
+          id: string
+          is_featured: boolean | null
+          media_type: string
+          thumbnail_url: string | null
+          title: string | null
+          url: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          employer_id: string
+          id?: string
+          is_featured?: boolean | null
+          media_type: string
+          thumbnail_url?: string | null
+          title?: string | null
+          url: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          employer_id?: string
+          id?: string
+          is_featured?: boolean | null
+          media_type?: string
+          thumbnail_url?: string | null
+          title?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_gallery_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_gallery_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_locations: {
+        Row: {
+          address_line1: string | null
+          city: string
+          created_at: string | null
+          description: string | null
+          employee_count: number | null
+          employer_id: string
+          id: string
+          is_headquarters: boolean | null
+          is_hiring: boolean | null
+          lat: number | null
+          lng: number | null
+          name: string
+          phone: string | null
+          photo_url: string | null
+          state: string
+          zip_code: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          city: string
+          created_at?: string | null
+          description?: string | null
+          employee_count?: number | null
+          employer_id: string
+          id?: string
+          is_headquarters?: boolean | null
+          is_hiring?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          name: string
+          phone?: string | null
+          photo_url?: string | null
+          state: string
+          zip_code?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          city?: string
+          created_at?: string | null
+          description?: string | null
+          employee_count?: number | null
+          employer_id?: string
+          id?: string
+          is_headquarters?: boolean | null
+          is_hiring?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          phone?: string | null
+          photo_url?: string | null
+          state?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_locations_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_locations_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_page_analytics: {
+        Row: {
+          applied_to_job: boolean | null
+          company_page_id: string
+          device_type: string | null
+          id: string
+          pages_viewed: number | null
+          referrer: string | null
+          session_duration_seconds: number | null
+          source: string | null
+          visited_at: string | null
+          visitor_id: string | null
+          visitor_type: string | null
+        }
+        Insert: {
+          applied_to_job?: boolean | null
+          company_page_id: string
+          device_type?: string | null
+          id?: string
+          pages_viewed?: number | null
+          referrer?: string | null
+          session_duration_seconds?: number | null
+          source?: string | null
+          visited_at?: string | null
+          visitor_id?: string | null
+          visitor_type?: string | null
+        }
+        Update: {
+          applied_to_job?: boolean | null
+          company_page_id?: string
+          device_type?: string | null
+          id?: string
+          pages_viewed?: number | null
+          referrer?: string | null
+          session_duration_seconds?: number | null
+          source?: string | null
+          visited_at?: string | null
+          visitor_id?: string | null
+          visitor_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_page_analytics_company_page_id_fkey"
+            columns: ["company_page_id"]
+            isOneToOne: false
+            referencedRelation: "company_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_page_sections: {
+        Row: {
+          company_page_id: string
+          content: Json | null
+          created_at: string | null
+          display_order: number
+          id: string
+          is_visible: boolean | null
+          section_type: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_page_id: string
+          content?: Json | null
+          created_at?: string | null
+          display_order: number
+          id?: string
+          is_visible?: boolean | null
+          section_type: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_page_id?: string
+          content?: Json | null
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          is_visible?: boolean | null
+          section_type?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_page_sections_company_page_id_fkey"
+            columns: ["company_page_id"]
+            isOneToOne: false
+            referencedRelation: "company_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_pages: {
+        Row: {
+          about_content: string | null
+          about_title: string | null
+          benefits_title: string | null
+          brand_font: string | null
+          brand_primary_color: string | null
+          brand_secondary_color: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string | null
+          culture_description: string | null
+          culture_title: string | null
+          custom_css: string | null
+          employer_id: string
+          founded_year: number | null
+          headquarters_text: string | null
+          hero_cta_link: string | null
+          hero_cta_text: string | null
+          hero_headline: string | null
+          hero_image_url: string | null
+          hero_subheadline: string | null
+          hero_video_url: string | null
+          id: string
+          is_published: boolean | null
+          jobs_title: string | null
+          meta_description: string | null
+          meta_title: string | null
+          mission_statement: string | null
+          og_image_url: string | null
+          published_at: string | null
+          show_benefits: boolean | null
+          show_contact_form: boolean | null
+          show_open_jobs: boolean | null
+          show_testimonials: boolean | null
+          slug: string
+          testimonials_title: string | null
+          total_views: number | null
+          unique_visitors: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          about_content?: string | null
+          about_title?: string | null
+          benefits_title?: string | null
+          brand_font?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          culture_description?: string | null
+          culture_title?: string | null
+          custom_css?: string | null
+          employer_id: string
+          founded_year?: number | null
+          headquarters_text?: string | null
+          hero_cta_link?: string | null
+          hero_cta_text?: string | null
+          hero_headline?: string | null
+          hero_image_url?: string | null
+          hero_subheadline?: string | null
+          hero_video_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          jobs_title?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          mission_statement?: string | null
+          og_image_url?: string | null
+          published_at?: string | null
+          show_benefits?: boolean | null
+          show_contact_form?: boolean | null
+          show_open_jobs?: boolean | null
+          show_testimonials?: boolean | null
+          slug: string
+          testimonials_title?: string | null
+          total_views?: number | null
+          unique_visitors?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          about_content?: string | null
+          about_title?: string | null
+          benefits_title?: string | null
+          brand_font?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          culture_description?: string | null
+          culture_title?: string | null
+          custom_css?: string | null
+          employer_id?: string
+          founded_year?: number | null
+          headquarters_text?: string | null
+          hero_cta_link?: string | null
+          hero_cta_text?: string | null
+          hero_headline?: string | null
+          hero_image_url?: string | null
+          hero_subheadline?: string | null
+          hero_video_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          jobs_title?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          mission_statement?: string | null
+          og_image_url?: string | null
+          published_at?: string | null
+          show_benefits?: boolean | null
+          show_contact_form?: boolean | null
+          show_open_jobs?: boolean | null
+          show_testimonials?: boolean | null
+          slug?: string
+          testimonials_title?: string | null
+          total_views?: number | null
+          unique_visitors?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_pages_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: true
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_pages_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: true
+            referencedRelation: "employer_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_stats: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          employer_id: string
+          icon: string | null
+          id: string
+          label: string
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          employer_id: string
+          icon?: string | null
+          id?: string
+          label: string
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          employer_id?: string
+          icon?: string | null
+          id?: string
+          label?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_stats_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_stats_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_testimonials: {
+        Row: {
+          author_name: string
+          author_photo_url: string | null
+          author_title: string | null
+          created_at: string | null
+          display_order: number | null
+          employer_id: string
+          id: string
+          is_approved: boolean | null
+          is_featured: boolean | null
+          quote: string
+          rating: number | null
+          years_at_company: number | null
+        }
+        Insert: {
+          author_name: string
+          author_photo_url?: string | null
+          author_title?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          employer_id: string
+          id?: string
+          is_approved?: boolean | null
+          is_featured?: boolean | null
+          quote: string
+          rating?: number | null
+          years_at_company?: number | null
+        }
+        Update: {
+          author_name?: string
+          author_photo_url?: string | null
+          author_title?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          employer_id?: string
+          id?: string
+          is_approved?: boolean | null
+          is_featured?: boolean | null
+          quote?: string
+          rating?: number | null
+          years_at_company?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_testimonials_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_testimonials_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employer_profiles: {
         Row: {
           address_line1: string | null
+          avg_time_to_hire: number | null
           bank_account_encrypted: string | null
           bank_routing_encrypted: string | null
           billing_address_encrypted: string | null
           city: string | null
           company_name: string
           company_size: Database["public"]["Enums"]["company_size"] | null
+          cover_image_url: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -259,6 +835,12 @@ export type Database = {
           logo_url: string | null
           phone: string | null
           profile_setup_complete: boolean | null
+          safety_record: string | null
+          slug: string | null
+          social_facebook: string | null
+          social_instagram: string | null
+          social_linkedin: string | null
+          social_twitter: string | null
           state: string | null
           stripe_customer_id: string | null
           subscription_plan:
@@ -267,8 +849,11 @@ export type Database = {
           subscription_status:
             | Database["public"]["Enums"]["subscription_status"]
             | null
+          tagline: string | null
           tax_id_encrypted: string | null
+          total_hires: number | null
           trial_ends_at: string | null
+          union_affiliation: string | null
           updated_at: string | null
           user_id: string
           website: string | null
@@ -276,12 +861,14 @@ export type Database = {
         }
         Insert: {
           address_line1?: string | null
+          avg_time_to_hire?: number | null
           bank_account_encrypted?: string | null
           bank_routing_encrypted?: string | null
           billing_address_encrypted?: string | null
           city?: string | null
           company_name: string
           company_size?: Database["public"]["Enums"]["company_size"] | null
+          cover_image_url?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -292,6 +879,12 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           profile_setup_complete?: boolean | null
+          safety_record?: string | null
+          slug?: string | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_twitter?: string | null
           state?: string | null
           stripe_customer_id?: string | null
           subscription_plan?:
@@ -300,8 +893,11 @@ export type Database = {
           subscription_status?:
             | Database["public"]["Enums"]["subscription_status"]
             | null
+          tagline?: string | null
           tax_id_encrypted?: string | null
+          total_hires?: number | null
           trial_ends_at?: string | null
+          union_affiliation?: string | null
           updated_at?: string | null
           user_id: string
           website?: string | null
@@ -309,12 +905,14 @@ export type Database = {
         }
         Update: {
           address_line1?: string | null
+          avg_time_to_hire?: number | null
           bank_account_encrypted?: string | null
           bank_routing_encrypted?: string | null
           billing_address_encrypted?: string | null
           city?: string | null
           company_name?: string
           company_size?: Database["public"]["Enums"]["company_size"] | null
+          cover_image_url?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -325,6 +923,12 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           profile_setup_complete?: boolean | null
+          safety_record?: string | null
+          slug?: string | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_twitter?: string | null
           state?: string | null
           stripe_customer_id?: string | null
           subscription_plan?:
@@ -333,8 +937,11 @@ export type Database = {
           subscription_status?:
             | Database["public"]["Enums"]["subscription_status"]
             | null
+          tagline?: string | null
           tax_id_encrypted?: string | null
+          total_hires?: number | null
           trial_ends_at?: string | null
+          union_affiliation?: string | null
           updated_at?: string | null
           user_id?: string
           website?: string | null
@@ -743,6 +1350,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      page_templates: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_premium: boolean | null
+          name: string
+          template_data: Json
+          thumbnail_url: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_premium?: boolean | null
+          name: string
+          template_data: Json
+          thumbnail_url?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_premium?: boolean | null
+          name?: string
+          template_data?: Json
+          thumbnail_url?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
       }
       profile_access_logs: {
         Row: {
