@@ -38,11 +38,12 @@ export default defineConfig(({ mode }) => ({
           "vendor-query": ["@tanstack/react-query"],
           "vendor-motion": ["framer-motion"],
           "vendor-charts": ["recharts"],
+          "vendor-supabase": ["@supabase/supabase-js"],
         },
       },
     },
-    // Increase chunk size warning limit
-    chunkSizeWarningLimit: 500,
+    // Lower chunk size warning limit to catch bloat earlier
+    chunkSizeWarningLimit: 300,
   },
   esbuild: {
     // Also drop console in esbuild for faster builds
