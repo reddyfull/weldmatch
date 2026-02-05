@@ -192,7 +192,12 @@ export default function WelderProfileSetup() {
       });
       navigate("/welder/dashboard");
     } catch (err) {
-      setError("Failed to create profile. Please try again.");
+      console.error("Create welder profile failed", err);
+      const msg =
+        typeof err === "object" && err && "message" in err
+          ? String((err as any).message)
+          : "Failed to create profile. Please try again.";
+      setError(msg);
     }
   };
 

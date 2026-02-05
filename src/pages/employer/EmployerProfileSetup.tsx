@@ -93,7 +93,12 @@ export default function EmployerProfileSetup() {
       });
       navigate("/employer/dashboard");
     } catch (err) {
-      setError("Failed to create company profile. Please try again.");
+      console.error("Create employer profile failed", err);
+      const msg =
+        typeof err === "object" && err && "message" in err
+          ? String((err as any).message)
+          : "Failed to create company profile. Please try again.";
+      setError(msg);
     }
   };
 
