@@ -22,6 +22,7 @@ import { CertificationUpload } from "@/components/CertificationUpload";
 import { CertificationsList } from "@/components/CertificationsList";
 import { SensitiveDataSection } from "@/components/welder/SensitiveDataSection";
 import { SocialLinksSection } from "@/components/welder/SocialLinksSection";
+import { PublicProfileUrlSection } from "@/components/welder/PublicProfileUrlSection";
 
 export default function WelderProfileEdit() {
   const navigate = useNavigate();
@@ -52,6 +53,7 @@ export default function WelderProfileEdit() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
+  const [username, setUsername] = useState("");
 
   // Populate form when data loads
   useEffect(() => {
@@ -71,6 +73,7 @@ export default function WelderProfileEdit() {
       setWebsiteUrl(welderProfile.website_url || "");
       setLinkedinUrl(welderProfile.linkedin_url || "");
       setInstagramUrl(welderProfile.instagram_url || "");
+      setUsername(welderProfile.username || "");
     }
   }, [welderProfile]);
 
@@ -149,6 +152,7 @@ export default function WelderProfileEdit() {
         website_url: websiteUrl || null,
         linkedin_url: linkedinUrl || null,
         instagram_url: instagramUrl || null,
+        username: username || null,
       });
 
       await queryClient.invalidateQueries({ queryKey: ["welder_profile", user?.id] });
@@ -401,6 +405,13 @@ export default function WelderProfileEdit() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Public Profile URL Section */}
+        <PublicProfileUrlSection
+          currentUsername={welderProfile.username}
+          onUsernameChange={(v) => handleFieldChange(setUsername, v)}
+          hasChanges={hasChanges}
+        />
 
         {/* Social & Web Presence Section */}
         <SocialLinksSection
