@@ -258,6 +258,7 @@ export type Database = {
           lng: number | null
           logo_url: string | null
           phone: string | null
+          profile_setup_complete: boolean | null
           state: string | null
           stripe_customer_id: string | null
           subscription_plan:
@@ -290,6 +291,7 @@ export type Database = {
           lng?: number | null
           logo_url?: string | null
           phone?: string | null
+          profile_setup_complete?: boolean | null
           state?: string | null
           stripe_customer_id?: string | null
           subscription_plan?:
@@ -322,6 +324,7 @@ export type Database = {
           lng?: number | null
           logo_url?: string | null
           phone?: string | null
+          profile_setup_complete?: boolean | null
           state?: string | null
           stripe_customer_id?: string | null
           subscription_plan?:
@@ -1102,6 +1105,7 @@ export type Database = {
           phone_personal_encrypted: string | null
           professional_title: string | null
           profile_completion: number | null
+          profile_setup_complete: boolean | null
           profile_views: number | null
           profile_visibility: string | null
           rate_negotiable: boolean | null
@@ -1156,6 +1160,7 @@ export type Database = {
           phone_personal_encrypted?: string | null
           professional_title?: string | null
           profile_completion?: number | null
+          profile_setup_complete?: boolean | null
           profile_views?: number | null
           profile_visibility?: string | null
           rate_negotiable?: boolean | null
@@ -1210,6 +1215,7 @@ export type Database = {
           phone_personal_encrypted?: string | null
           professional_title?: string | null
           profile_completion?: number | null
+          profile_setup_complete?: boolean | null
           profile_views?: number | null
           profile_visibility?: string | null
           rate_negotiable?: boolean | null

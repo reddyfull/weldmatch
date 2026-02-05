@@ -81,9 +81,12 @@ export default function PostLoginRouter() {
       const userType = userProfile?.user_type;
 
       if (userType === "welder") {
-        navigate(welderProfile ? "/welder/dashboard" : "/welder/profile/setup");
+        // Check the explicit setup complete flag instead of individual fields
+        const isProfileComplete = welderProfile?.profile_setup_complete === true;
+        navigate(isProfileComplete ? "/welder/dashboard" : "/welder/profile/setup");
       } else if (userType === "employer") {
-        navigate(employerProfile ? "/employer/dashboard" : "/employer/profile/setup");
+        const isProfileComplete = employerProfile?.profile_setup_complete === true;
+        navigate(isProfileComplete ? "/employer/dashboard" : "/employer/profile/setup");
       } else {
         // For Google sign-ins without a profile type yet
         navigate("/choose-role");
