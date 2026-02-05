@@ -588,11 +588,10 @@ export function getGradeColor(grade: string): string {
 
 export function getSeverityColor(severity: string): string {
   switch (severity) {
-    case "minor":
     case "observation":
       return "text-blue-600 bg-blue-50 border-blue-200";
-    case "moderate":
     case "minor":
+    case "moderate":
       return "text-yellow-600 bg-yellow-50 border-yellow-200";
     case "major":
       return "text-orange-600 bg-orange-50 border-orange-200";
