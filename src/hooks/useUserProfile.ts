@@ -30,6 +30,7 @@ export interface WelderProfile {
   bio: string | null;
   is_available: boolean;
   profile_completion: number;
+  profile_setup_complete: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -53,6 +54,7 @@ export interface EmployerProfile {
   subscription_plan: "free_trial" | "starter" | "pro" | "enterprise";
   subscription_status: "trial" | "active" | "past_due" | "cancelled";
   trial_ends_at: string | null;
+  profile_setup_complete: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -96,6 +98,8 @@ export function useWelderProfile() {
       return data as WelderProfile | null;
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 60, // 1 minute - prevents stale reads
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -117,6 +121,8 @@ export function useEmployerProfile() {
       return data as EmployerProfile | null;
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 60, // 1 minute - prevents stale reads
+    refetchOnWindowFocus: false,
   });
 }
 

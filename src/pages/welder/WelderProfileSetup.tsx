@@ -180,6 +180,7 @@ export default function WelderProfileSetup() {
         willing_to_travel: willingToTravel,
         bio: bio || null,
         is_available: true,
+        profile_setup_complete: true,
       });
 
       // Refetch to ensure fresh data before navigating (prevents race condition)

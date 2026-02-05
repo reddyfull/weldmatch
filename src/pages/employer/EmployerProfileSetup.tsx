@@ -81,6 +81,7 @@ export default function EmployerProfileSetup() {
         subscription_plan: "free_trial",
         subscription_status: "trial",
         trial_ends_at: trialEndsAt.toISOString(),
+        profile_setup_complete: true,
       });
 
       // Refetch to ensure fresh data before navigating (prevents race condition)
