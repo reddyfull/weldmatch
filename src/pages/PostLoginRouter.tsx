@@ -11,8 +11,8 @@ export default function PostLoginRouter() {
   const queryClient = useQueryClient();
   const { user, loading: authLoading, isAdmin, adminChecked } = useAuth();
   const { data: userProfile, isLoading: profileLoading } = useUserProfile();
-  const { data: welderProfile, isLoading: welderLoading } = useWelderProfile();
-  const { data: employerProfile, isLoading: employerLoading } = useEmployerProfile();
+  const { data: welderProfile, isLoading: welderLoading, isFetching: welderFetching } = useWelderProfile();
+  const { data: employerProfile, isLoading: employerLoading, isFetching: employerFetching } = useEmployerProfile();
   const [hasChecked, setHasChecked] = useState(false);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
@@ -35,8 +35,8 @@ export default function PostLoginRouter() {
         return;
       }
 
-      // Wait for all profile data for non-admin users
-      if (profileLoading || welderLoading || employerLoading) return;
+      // Wait for all profile data for non-admin users (including refetch states)
+      if (profileLoading || welderLoading || employerLoading || welderFetching || employerFetching) return;
 
       // Check for pending user type from OAuth registration flow
       const pendingUserType = sessionStorage.getItem('pendingUserType') as 'welder' | 'employer' | null;
@@ -81,18 +81,9 @@ export default function PostLoginRouter() {
       const userType = userProfile?.user_type;
 
       if (userType === "welder") {
-        // Check if welder profile exists AND has required fields (city, state, processes)
-        // This indicates the profile setup was completed
-        const isProfileComplete = welderProfile && 
-          welderProfile.city && 
-          welderProfile.state && 
-          (welderProfile.weld_processes?.length ?? 0) > 0;
-        
-        navigate(isProfileComplete ? "/welder/dashboard" : "/welder/profile/setup");
+        navigate(welderProfile ? "/welder/dashboard" : "/welder/profile/setup");
       } else if (userType === "employer") {
-        // Check if employer profile has required fields
-        const isProfileComplete = employerProfile && employerProfile.company_name;
-        navigate(isProfileComplete ? "/employer/dashboard" : "/employer/profile/setup");
+        navigate(employerProfile ? "/employer/dashboard" : "/employer/profile/setup");
       } else {
         // For Google sign-ins without a profile type yet
         navigate("/choose-role");
@@ -100,7 +91,7 @@ export default function PostLoginRouter() {
     };
 
     handleRouting();
-  }, [user, userProfile, profileLoading, welderProfile, employerProfile, authLoading, welderLoading, employerLoading, hasChecked, isUpdatingRole, isAdmin, adminChecked, navigate, queryClient]);
+  }, [user, userProfile, profileLoading, welderProfile, employerProfile, authLoading, welderLoading, employerLoading, welderFetching, employerFetching, hasChecked, isUpdatingRole, isAdmin, adminChecked, navigate, queryClient]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary/95 to-primary-dark flex items-center justify-center">

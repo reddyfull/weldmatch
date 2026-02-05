@@ -182,8 +182,8 @@ export default function WelderProfileSetup() {
         is_available: true,
       });
 
-      // Wait for cache invalidation to complete before navigating
-      await queryClient.invalidateQueries({ queryKey: ["welder_profile", user?.id] });
+      // Refetch to ensure fresh data before navigating (prevents race condition)
+      await queryClient.refetchQueries({ queryKey: ["welder_profile", user?.id] });
 
       toast({
         title: "Profile Created!",
